@@ -1714,270 +1714,163 @@ export class PixelArtRenderer {
     ctx.arc(px + pWidth / 2, py + 9 + walkBob, 10, 0, Math.PI * 2);
     ctx.fill();
 
-    // 7. Hair (Pelo Largo para Niña vs Pelo Negro "Prota" para Niño)
+     // 7. Hair corregido: rostros normales visibles (cara no tapada, ojos sobre piel)
     if (isGirl) {
-      // --- NIÑA: PELO LARGO FLUIDO CON LAZOS Y MECHONES HERMOSOS ---
-      const hairColor = profile.avatar.hairColor || '#451a03';
-      const hairHighlight = '#78350f';
+      const hairColor = profile.avatar.hairColor || "#451a03";
+      const hairHighlight = "#78350f";
       ctx.fillStyle = hairColor;
 
-      if (facing === 'down') {
-        // Long hair strands cascading down past shoulders
+      if (facing === "down") {
         ctx.beginPath();
-        ctx.roundRect(px + 1, py + 10 + walkBob, 6, 18, 3);
+        ctx.arc(px + pWidth / 2, py + 5 + walkBob, 9.5, Math.PI, 0);
         ctx.fill();
         ctx.beginPath();
-        ctx.roundRect(px + pWidth - 7, py + 10 + walkBob, 6, 18, 3);
+        ctx.roundRect(px + 2, py + 8 + walkBob, 5, 11, 2);
         ctx.fill();
-
-        // Crown dome
         ctx.beginPath();
-        ctx.arc(px + pWidth / 2, py + 6 + walkBob, 11.5, Math.PI * 0.85, Math.PI * 2.15);
+        ctx.roundRect(px + pWidth - 7, py + 8 + walkBob, 5, 11, 2);
         ctx.fill();
-
-        // Cute bangs with parting
         ctx.beginPath();
         ctx.moveTo(px + 6, py + 3 + walkBob);
-        ctx.quadraticCurveTo(px + 14, py + 7 + walkBob, px + 17, py + 3 + walkBob);
-        ctx.quadraticCurveTo(px + 23, py + 7 + walkBob, px + 26, py + 3 + walkBob);
-        ctx.fill();
-
-        // Hair shine highlight
-        ctx.fillStyle = hairHighlight;
-        ctx.fillRect(px + 9, py + 1 + walkBob, 14, 2);
-
-        // Cute Hair Bows / Ribbons on sides 🎀
-        ctx.fillStyle = '#ec4899';
-        ctx.fillRect(px + 2, py + 6 + walkBob, 4, 4);
-        ctx.fillRect(px + pWidth - 6, py + 6 + walkBob, 4, 4);
-        ctx.fillStyle = '#fde047';
-        ctx.fillRect(px + 3, py + 7 + walkBob, 2, 2);
-        ctx.fillRect(px + pWidth - 5, py + 7 + walkBob, 2, 2);
-
-        // Eyes (Sparkling anime eyes with eyelashes)
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(px + 8, py + 8 + walkBob, 4, 4);
-        ctx.fillRect(px + 20, py + 8 + walkBob, 4, 4);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(px + 9, py + 8 + walkBob, 2, 2);
-        ctx.fillRect(px + 21, py + 8 + walkBob, 2, 2);
-
-        // Rosy Cheeks
-        ctx.fillStyle = 'rgba(244, 114, 182, 0.65)';
-        ctx.fillRect(px + 6, py + 12 + walkBob, 4, 2);
-        ctx.fillRect(px + 22, py + 12 + walkBob, 4, 2);
-
-        // Cheerful Smile
-        ctx.strokeStyle = '#9d174d';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(px + pWidth / 2, py + 11 + walkBob, 3, 0.2, Math.PI - 0.2);
-        ctx.stroke();
-      } else if (facing === 'up') {
-        // Long hair flowing down the full back past waist
-        ctx.beginPath();
-        ctx.roundRect(px + 4, py + 4 + walkBob, pWidth - 8, 25, 6);
-        ctx.fill();
-
-        // Individual hair strand volume
-        ctx.beginPath();
-        ctx.roundRect(px + 2, py + 8 + walkBob, 7, 22, 3);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.roundRect(px + pWidth - 9, py + 8 + walkBob, 7, 22, 3);
-        ctx.fill();
-
-        // Hair highlight
-        ctx.fillStyle = hairHighlight;
-        ctx.fillRect(px + 10, py + 12 + walkBob, 12, 10);
-
-        // Cute Bow Clip on back of hair 🎀
-        ctx.fillStyle = '#ec4899';
-        ctx.fillRect(px + pWidth / 2 - 5, py + 6 + walkBob, 10, 5);
-        ctx.fillStyle = '#fde047';
-        ctx.fillRect(px + pWidth / 2 - 2, py + 7 + walkBob, 4, 3);
-      } else if (facing === 'left') {
-        // Long hair ponytail / flowing cascade on left side
-        ctx.beginPath();
-        ctx.arc(px + pWidth / 2 + 2, py + 7 + walkBob, 11, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.roundRect(px + 14, py + 8 + walkBob, 12, 20, 5);
-        ctx.fill();
-
-        // Front bangs
-        ctx.fillRect(px + 5, py + 3 + walkBob, 6, 6);
-
-        // Hair clip
-        ctx.fillStyle = '#ec4899';
-        ctx.fillRect(px + 10, py + 4 + walkBob, 4, 4);
-
-        // Eye
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(px + 7, py + 8 + walkBob, 4, 4);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(px + 8, py + 8 + walkBob, 2, 2);
-      } else if (facing === 'right') {
-        // Long hair flowing on right side
-        ctx.beginPath();
-        ctx.arc(px + pWidth / 2 - 2, py + 7 + walkBob, 11, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.roundRect(px + 6, py + 8 + walkBob, 12, 20, 5);
-        ctx.fill();
-
-        // Front bangs
-        ctx.fillRect(px + 21, py + 3 + walkBob, 6, 6);
-
-        // Hair clip
-        ctx.fillStyle = '#ec4899';
-        ctx.fillRect(px + 18, py + 4 + walkBob, 4, 4);
-
-        // Eye
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(px + pWidth - 11, py + 8 + walkBob, 4, 4);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(px + pWidth - 10, py + 8 + walkBob, 2, 2);
-      }
-    } else {
-      // --- NIÑO: SPRITE "PROTA" CON PELO NEGRO FLUIDO Y CURTAIN BANGS ---
-      const hairBase = profile.avatar.hairColor || '#18181b';
-      const hairShade = '#27272a';
-      const hairHighlight = '#3f3f46';
-      const hairOutline = '#09090b';
-
-      if (facing === 'down') {
-        // 1. Puffy side volume behind ears
-        ctx.fillStyle = hairBase;
-        ctx.beginPath();
-        ctx.roundRect(px + 2, py + 4 + walkBob, 7, 10, 3);
-        ctx.roundRect(px + pWidth - 9, py + 4 + walkBob, 7, 10, 3);
-        ctx.fill();
-
-        // 2. Main rounded hair dome
-        ctx.beginPath();
-        ctx.arc(px + pWidth / 2, py + 6 + walkBob, 12, Math.PI * 0.82, Math.PI * 2.18);
-        ctx.fill();
-
-        // 3. Side lock contours
-        ctx.beginPath();
-        ctx.roundRect(px + 4, py + 2 + walkBob, 6, 12, 3);
-        ctx.roundRect(px + pWidth - 10, py + 2 + walkBob, 6, 12, 3);
-        ctx.fill();
-
-        // 4. Front Curtain Bangs with realistic center-right split
-        ctx.beginPath();
-        ctx.moveTo(px + 5, py + 3 + walkBob);
-        ctx.quadraticCurveTo(px + 11, py + 7.5 + walkBob, px + 14, py + 3 + walkBob);
-        ctx.quadraticCurveTo(px + 21, py + 8 + walkBob, px + 27, py + 3 + walkBob);
-        ctx.lineTo(px + 27, py + 1 + walkBob);
-        ctx.lineTo(px + 5, py + 1 + walkBob);
+        ctx.quadraticCurveTo(px + 12, py + 6 + walkBob, px + 15, py + 3 + walkBob);
+        ctx.quadraticCurveTo(px + 19, py + 6 + walkBob, px + 26, py + 3 + walkBob);
+        ctx.lineTo(px + 26, py + 1 + walkBob);
+        ctx.lineTo(px + 6, py + 1 + walkBob);
         ctx.closePath();
         ctx.fill();
-
-        // 5. Sleek black hair highlights on top
         ctx.fillStyle = hairHighlight;
-        ctx.fillRect(px + 9, py + 1 + walkBob, 14, 2);
-        ctx.fillStyle = hairShade;
-        ctx.fillRect(px + 11, py + 3 + walkBob, 10, 1.5);
-
-        // 6. Expressive dark anime eyes with white twinkle
-        ctx.fillStyle = '#09090b';
-        ctx.fillRect(px + 8, py + 8 + walkBob, 4, 4);
-        ctx.fillRect(px + 20, py + 8 + walkBob, 4, 4);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(px + 9, py + 8 + walkBob, 2, 2);
-        ctx.fillRect(px + 21, py + 8 + walkBob, 2, 2);
-
-        // 7. Rosy warm cheeks
-        ctx.fillStyle = 'rgba(244, 114, 182, 0.45)';
-        ctx.fillRect(px + 6, py + 12 + walkBob, 3, 2);
-        ctx.fillRect(px + 23, py + 12 + walkBob, 3, 2);
-
-        // 8. Cheerful smile
-        ctx.strokeStyle = '#6b3614';
-        ctx.lineWidth = 1.5;
+        ctx.fillRect(px + 10, py + 2 + walkBob, 12, 1.5);
+        ctx.fillStyle = "#ec4899";
+        ctx.fillRect(px + 2, py + 5 + walkBob, 4, 4);
+        ctx.fillRect(px + pWidth - 6, py + 5 + walkBob, 4, 4);
+        ctx.fillStyle = "#fde047";
+        ctx.fillRect(px + 3, py + 6 + walkBob, 2, 2);
+        ctx.fillRect(px + pWidth - 5, py + 6 + walkBob, 2, 2);
+        ctx.fillStyle = "#0f172a";
+        ctx.fillRect(px + 9, py + 9 + walkBob, 3, 3);
+        ctx.fillRect(px + 20, py + 9 + walkBob, 3, 3);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(px + 10, py + 9 + walkBob, 1.5, 1.5);
+        ctx.fillRect(px + 21, py + 9 + walkBob, 1.5, 1.5);
+        ctx.fillStyle = "rgba(244, 114, 182, 0.65)";
+        ctx.fillRect(px + 7, py + 12 + walkBob, 3, 1.5);
+        ctx.fillRect(px + 22, py + 12 + walkBob, 3, 1.5);
+        ctx.strokeStyle = "#9d174d";
+        ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.arc(px + pWidth / 2, py + 11 + walkBob, 3, 0.2, Math.PI - 0.2);
+        ctx.arc(px + pWidth / 2, py + 12 + walkBob, 2.5, 0.2, Math.PI - 0.2);
         ctx.stroke();
-      } else if (facing === 'up') {
-        // --- BACK VIEW: Full rounded voluminous hair dome with layered lower fringe ---
+      } else if (facing === "up") {
+        ctx.beginPath();
+        ctx.arc(px + pWidth / 2, py + 6 + walkBob, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.roundRect(px + 4, py + 7 + walkBob, pWidth - 8, 14, 4);
+        ctx.fill();
+        ctx.fillStyle = hairHighlight;
+        ctx.fillRect(px + 10, py + 8 + walkBob, 12, 1.5);
+        ctx.fillStyle = "#ec4899";
+        ctx.fillRect(px + pWidth / 2 - 4, py + 5 + walkBob, 8, 4);
+        ctx.fillStyle = "#fde047";
+        ctx.fillRect(px + pWidth / 2 - 1.5, py + 6 + walkBob, 3, 2);
+      } else if (facing === "left") {
+        ctx.beginPath();
+        ctx.arc(px + pWidth / 2 + 1, py + 6 + walkBob, 9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.roundRect(px + 15, py + 9 + walkBob, 10, 13, 4);
+        ctx.fill();
+        ctx.fillStyle = "#ec4899";
+        ctx.fillRect(px + 10, py + 4 + walkBob, 3, 3);
+        ctx.fillStyle = "#0f172a";
+        ctx.fillRect(px + 7, py + 9 + walkBob, 3, 3);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(px + 8, py + 9 + walkBob, 1.5, 1.5);
+      } else if (facing === "right") {
+        ctx.beginPath();
+        ctx.arc(px + pWidth / 2 - 1, py + 6 + walkBob, 9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.roundRect(px + 7, py + 9 + walkBob, 10, 13, 4);
+        ctx.fill();
+        ctx.fillStyle = "#ec4899";
+        ctx.fillRect(px + 19, py + 4 + walkBob, 3, 3);
+        ctx.fillStyle = "#0f172a";
+        ctx.fillRect(px + 22, py + 9 + walkBob, 3, 3);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(px + 23, py + 9 + walkBob, 1.5, 1.5);
+      }
+    } else {
+      const hairBase = profile.avatar.hairColor || "#18181b";
+      const hairShade = "#27272a";
+      const hairHighlight = "#3f3f46";
+
+      if (facing === "down") {
         ctx.fillStyle = hairBase;
         ctx.beginPath();
-        ctx.arc(px + pWidth / 2, py + 7 + walkBob, 12.5, 0, Math.PI * 2);
+        ctx.arc(px + pWidth / 2, py + 5 + walkBob, 9, Math.PI, 0);
         ctx.fill();
-
-        // Fluffy back volume covering nape
+        ctx.fillRect(px + 4, py + 5 + walkBob, 5, 4);
+        ctx.fillRect(px + pWidth - 9, py + 5 + walkBob, 5, 4);
         ctx.beginPath();
-        ctx.roundRect(px + 3, py + 3 + walkBob, pWidth - 6, 17, 5);
+        ctx.moveTo(px + 6, py + 3 + walkBob);
+        ctx.quadraticCurveTo(px + 11, py + 6 + walkBob, px + 14, py + 3 + walkBob);
+        ctx.quadraticCurveTo(px + 18, py + 6 + walkBob, px + 26, py + 3 + walkBob);
+        ctx.lineTo(px + 26, py + 1 + walkBob);
+        ctx.lineTo(px + 6, py + 1 + walkBob);
+        ctx.closePath();
         ctx.fill();
-
-        // Layered lower fringe depth band
+        ctx.fillStyle = hairHighlight;
+        ctx.fillRect(px + 10, py + 2 + walkBob, 12, 1.2);
+        ctx.fillStyle = "#09090b";
+        ctx.fillRect(px + 9, py + 9 + walkBob, 3, 3);
+        ctx.fillRect(px + 20, py + 9 + walkBob, 3, 3);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(px + 10, py + 9 + walkBob, 1.5, 1.5);
+        ctx.fillRect(px + 21, py + 9 + walkBob, 1.5, 1.5);
+        ctx.fillStyle = "rgba(244, 114, 182, 0.45)";
+        ctx.fillRect(px + 7, py + 12 + walkBob, 3, 1.5);
+        ctx.fillRect(px + 22, py + 12 + walkBob, 3, 1.5);
+        ctx.strokeStyle = "#6b3614";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(px + pWidth / 2, py + 12 + walkBob, 2.5, 0.2, Math.PI - 0.2);
+        ctx.stroke();
+      } else if (facing === "up") {
+        ctx.fillStyle = hairBase;
+        ctx.beginPath();
+        ctx.arc(px + pWidth / 2, py + 6 + walkBob, 9.5, 0, Math.PI * 2);
+        ctx.fill();
         ctx.fillStyle = hairShade;
-        ctx.fillRect(px + 6, py + 15 + walkBob, pWidth - 12, 3);
-
-        // Sleek highlight sheen across top
+        ctx.fillRect(px + 7, py + 12 + walkBob, pWidth - 14, 2);
         ctx.fillStyle = hairHighlight;
-        ctx.fillRect(px + 9, py + 2 + walkBob, 14, 3);
-        ctx.fillStyle = hairBase;
-        ctx.fillRect(px + 12, py + 4 + walkBob, 8, 1);
-      } else if (facing === 'left') {
-        // --- LEFT PROFILE: Forward curtain fringe, top dome, fluffy back sweep ---
+        ctx.fillRect(px + 10, py + 3 + walkBob, 12, 1.5);
+      } else if (facing === "left") {
         ctx.fillStyle = hairBase;
         ctx.beginPath();
-        ctx.arc(px + pWidth / 2 + 1, py + 7 + walkBob, 11.5, 0, Math.PI * 2);
+        ctx.arc(px + pWidth / 2, py + 6 + walkBob, 9, 0, Math.PI * 2);
         ctx.fill();
-
-        // Fluffy rear hair volume sweeping back
-        ctx.beginPath();
-        ctx.roundRect(px + 13, py + 4 + walkBob, 13, 16, 5);
-        ctx.fill();
-
-        // Front bangs tuft over forehead
-        ctx.beginPath();
-        ctx.roundRect(px + 4, py + 3 + walkBob, 7, 7, 2);
-        ctx.fill();
-
-        // Sleek highlight
         ctx.fillStyle = hairHighlight;
-        ctx.fillRect(px + 11, py + 1 + walkBob, 9, 2);
-
-        // Single profile dark eye with shine
-        ctx.fillStyle = '#09090b';
-        ctx.fillRect(px + 7, py + 8 + walkBob, 4, 4);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(px + 8, py + 8 + walkBob, 2, 2);
-      } else if (facing === 'right') {
-        // --- RIGHT PROFILE: Forward curtain fringe, top dome, fluffy back sweep ---
+        ctx.fillRect(px + 11, py + 2 + walkBob, 8, 1.2);
+        ctx.fillStyle = "#09090b";
+        ctx.fillRect(px + 7, py + 9 + walkBob, 3, 3);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(px + 8, py + 9 + walkBob, 1.5, 1.5);
+      } else if (facing === "right") {
         ctx.fillStyle = hairBase;
         ctx.beginPath();
-        ctx.arc(px + pWidth / 2 - 1, py + 7 + walkBob, 11.5, 0, Math.PI * 2);
+        ctx.arc(px + pWidth / 2, py + 6 + walkBob, 9, 0, Math.PI * 2);
         ctx.fill();
-
-        // Fluffy rear hair volume sweeping back
-        ctx.beginPath();
-        ctx.roundRect(px + 6, py + 4 + walkBob, 13, 16, 5);
-        ctx.fill();
-
-        // Front bangs tuft over forehead
-        ctx.beginPath();
-        ctx.roundRect(px + pWidth - 11, py + 3 + walkBob, 7, 7, 2);
-        ctx.fill();
-
-        // Sleek highlight
         ctx.fillStyle = hairHighlight;
-        ctx.fillRect(px + 12, py + 1 + walkBob, 9, 2);
-
-        // Single profile dark eye with shine
-        ctx.fillStyle = '#09090b';
-        ctx.fillRect(px + pWidth - 11, py + 8 + walkBob, 4, 4);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(px + pWidth - 10, py + 8 + walkBob, 2, 2);
+        ctx.fillRect(px + 13, py + 2 + walkBob, 8, 1.2);
+        ctx.fillStyle = "#09090b";
+        ctx.fillRect(px + 22, py + 9 + walkBob, 3, 3);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(px + 23, py + 9 + walkBob, 1.5, 1.5);
       }
     }
   }
-
-  // --- RENDER PARTICLES OVERLAY ---
+// --- RENDER PARTICLES OVERLAY ---
   public renderParticles(ctx: CanvasRenderingContext2D) {
     this.particles.forEach((p) => {
       ctx.save();
