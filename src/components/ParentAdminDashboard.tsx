@@ -556,107 +556,48 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
           </button>
         </div>
 
-        {/* Navigation Tabs Bar */}
-        <div className="flex items-center gap-1.5 px-6 py-2.5 bg-slate-950 border-b border-slate-800 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('users')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'users'
-                ? 'bg-purple-600 text-white shadow'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            <span>Usuarios & Perfiles ({state.profiles?.length || 1})</span>
-          </button>
+        {/* Layout vertical: sidebar + contenido con scroll interno */}
+        <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
+          {/* Sidebar vertical — todos los menús visibles, sin scroll horizontal */}
+          <aside className="w-full md:w-64 shrink-0 bg-slate-950 border-b md:border-b-0 md:border-r border-slate-800 flex md:flex-col gap-1.5 p-3 overflow-x-auto md:overflow-y-auto md:overflow-x-hidden">
+            <div className="hidden md:block px-2 pb-2 pt-1">
+              <p className="text-[10px] font-black tracking-widest text-slate-500 uppercase">Menú de padres</p>
+              <p className="text-xs text-slate-400">Elegí una sección — todo está a la vista, desplazamiento vertical</p>
+            </div>
+            {[
+              { id: 'users', label: `Usuarios & Perfiles (${state.profiles?.length || 1})`, icon: Users, active: 'bg-purple-600 text-white shadow ring-1 ring-purple-400/30', idle: 'text-slate-300 hover:bg-slate-800' },
+              { id: 'notebook', label: 'Libreta de Misiones & Tareas', icon: BookOpen, active: 'bg-blue-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
+              { id: 'store', label: 'Tienda de Premios & Avatar', icon: ShoppingBag, active: 'bg-amber-500 text-slate-950 shadow', idle: 'text-slate-300 hover:bg-slate-800' },
+              { id: 'approvals', label: `Aprobaciones (${submittedTasks.length})`, icon: CheckCircle2, active: 'bg-emerald-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
+              { id: 'scoring', label: 'Puntos & Baremos', icon: Award, active: 'bg-teal-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
+              { id: 'import', label: 'Carga Masiva (.TXT)', icon: UploadCloud, active: 'bg-indigo-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
+              { id: 'cities', label: 'Desbloquear Ciudades', icon: Unlock, active: 'bg-cyan-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
+              { id: 'config', label: 'Ajustes & PIN', icon: Settings, active: 'bg-slate-700 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
+            ].map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id as any)}
+                  className={`shrink-0 md:shrink flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-black text-left transition-all cursor-pointer whitespace-nowrap md:whitespace-normal ${isActive ? item.active : item.idle} ${isActive ? '' : 'border border-transparent'}`}
+                >
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'opacity-100' : 'opacity-70'}`} />
+                  <span className="leading-tight">{item.label}</span>
+                  {isActive && <span className="ml-auto hidden md:inline text-[10px] opacity-70">●</span>}
+                </button>
+              );
+            })}
+            <div className="hidden md:block mt-auto pt-3 border-t border-slate-800">
+              <div className="bg-slate-900 border border-amber-500/20 rounded-xl p-3">
+                <p className="text-xs font-bold text-amber-300 flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> Tip</p>
+                <p className="text-[11px] text-slate-400 leading-relaxed mt-1">Podés bajar con la rueda del ratón dentro del panel derecho. No hay carrusel oculto.</p>
+              </div>
+            </div>
+          </aside>
 
-          <button
-            onClick={() => setActiveTab('notebook')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'notebook'
-                ? 'bg-blue-600 text-white shadow'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>Libreta de Misiones & Tareas</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('store')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'store'
-                ? 'bg-amber-600 text-slate-950 shadow'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-            }`}
-          >
-            <ShoppingBag className="w-4 h-4" />
-            <span>Tienda de Premios & Avatar</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('approvals')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'approvals'
-                ? 'bg-emerald-600 text-white shadow'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-            }`}
-          >
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Aprobaciones ({submittedTasks.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('scoring')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'scoring'
-                ? 'bg-teal-600 text-white shadow'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-            }`}
-          >
-            <Award className="w-4 h-4" />
-            <span>Puntos & Baremos</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('import')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'import'
-                ? 'bg-indigo-600 text-white shadow'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-            }`}
-          >
-            <UploadCloud className="w-4 h-4" />
-            <span>Carga Masiva (.TXT)</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('cities')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'cities'
-                ? 'bg-cyan-600 text-white shadow'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-            }`}
-          >
-            <Unlock className="w-4 h-4" />
-            <span>Desbloquear Ciudades</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('config')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'config'
-                ? 'bg-slate-700 text-white shadow'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-            }`}
-          >
-            <Settings className="w-4 h-4" />
-            <span>Ajustes & PIN</span>
-          </button>
-        </div>
-
-        {/* Tab Body Content */}
-        <div className="p-5 overflow-y-auto flex-1 bg-slate-900/60 space-y-4">
+          {/* Contenido — scroll vertical único */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-5 bg-slate-900/60 space-y-4">
           {/* ========================================================================= */}
           {/* TAB 1: GESTIÓN MULTI-USUARIO Y PERSONALIZACIÓN DE AVATAR */}
           {/* ========================================================================= */}
@@ -2059,6 +2000,7 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
               )}
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>

@@ -659,6 +659,71 @@ export class PixelArtRenderer {
     ctx.stroke();
   }
 
+  // --- HELPER: avenida piano 3D con grosor y teclas blancas/negras con profundidad ---
+  private renderPianoAvenue(ctx: CanvasRenderingContext2D, y: number, width: number) {
+    const h = 34; // alto de teclas blancas
+    const thickness = 10; // grosor lateral visible (efecto 3D referencia)
+    const whiteKeyW = 22;
+    const keys = Math.ceil(width / whiteKeyW) + 2;
+    // Sombra bajo el piano
+    ctx.fillStyle = 'rgba(12,14,18,0.28)';
+    ctx.beginPath(); ctx.ellipse(width/2, y + h + thickness + 4, width*0.48, 12, 0, 0, Math.PI*2); ctx.fill();
+    // Lateral / canto inferior (madera oscura)
+    ctx.fillStyle = '#2a2f3a';
+    ctx.fillRect(-10, y + h, width+20, thickness);
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(-10, y + h + thickness - 2, width+20, 2);
+    // Teclas blancas con degradado y veta
+    for (let k = -1; k < keys; k++) {
+      const x = k * whiteKeyW;
+      const grad = ctx.createLinearGradient(x, y, x, y + h);
+      grad.addColorStop(0, '#fefefe');
+      grad.addColorStop(0.35, '#f8fafc');
+      grad.addColorStop(1, '#e2e8f0');
+      ctx.fillStyle = grad;
+      ctx.fillRect(x, y, whiteKeyW - 1, h);
+      // línea divisoria y bisel superior
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.fillRect(x + whiteKeyW - 1, y, 1, h);
+      ctx.fillStyle = 'rgba(255,255,255,0.65)';
+      ctx.fillRect(x+1, y, whiteKeyW-3, 1);
+      // lateral de tecla (grosor)
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(x, y + h, whiteKeyW - 1, thickness - 2);
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(x + whiteKeyW - 1, y + h, 1, thickness - 2);
+    }
+    // Teclas negras alzadas
+    const blackPattern = [1,1,0,1,1,1,0]; // patrón por octava (7 blancas)
+    for (let k = -1; k < keys; k++) {
+      const mod = ((k % 7) + 7) % 7;
+      if (blackPattern[mod] === 0) continue;
+      const x = k * whiteKeyW + whiteKeyW - 7;
+      // sombra de tecla negra
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(x+1, y+1, 12, h*0.62 + 1);
+      // tecla negra
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(x, y, 12, Math.floor(h*0.62));
+      // bisel superior negra
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(x, y, 12, 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.fillRect(x+2, y+2, 2, Math.floor(h*0.62)-4);
+    }
+    // Bordes tierra/cesped del piano (como en referencia: tierra bajo el piano con hierba irregular)
+    ctx.fillStyle = '#7a5a32';
+    ctx.fillRect(-10, y + h + thickness, width+20, 8);
+    ctx.fillStyle = '#b8a98a';
+    // césped irregular encima y debajo del piano
+    for (let i=0;i<width;i+=18){
+      const j = (this.hash2(i*0.3, y)-0.5)*4;
+      ctx.fillStyle = i%36===0 ? '#4e8c33' : '#5a9e3a';
+      ctx.fillRect(i, y-6+j, 10, 6);
+      ctx.fillRect(i, y+h+thickness+6+j, 10, 5);
+    }
+  }
+
   // Animated Birds flying across the sky with natural wing flapping
   private renderFlyingBirds(ctx: CanvasRenderingContext2D, width: number, height: number) {
     const time = this.animTick * 0.05;
@@ -848,8 +913,7 @@ export class PixelArtRenderer {
     ctx.textAlign = 'start';
   }
 
-  // --- RENDER SCENE 3: EL CAMINO DE LA MATERIA (4 CIUDADES / BIMESTRES) ---
-  // EACH MATERIA HAS A COMPLETELY UNIQUE THEMATIC SCENARIO
+  // --- RENDER SCENE 3: EL CAMINO DE LA MATERIA (4 CIUDADES / BIMESTRES) - ZELDA MINISH CAP QUALITY ---
   public renderMateriaMapScene(
     ctx: CanvasRenderingContext2D,
     width: number,
@@ -860,7 +924,7 @@ export class PixelArtRenderer {
   ) {
     const materia = MATERIAS.find((m) => m.id === materiaId) || MATERIAS[0];
 
-    // Render Materia-Specific Biome Terrain & Scenery
+    // 1. Bioma temático como base — para Sonidos usamos pradera lush (como referencia) + piano como avenida, no fondo negro
     if (materiaId === 'matematicas') {
       this.renderMatematicasBiome(ctx, width, height);
     } else if (materiaId === 'lenguaje') {
@@ -872,66 +936,182 @@ export class PixelArtRenderer {
     } else if (materiaId === 'luces') {
       this.renderArteBiome(ctx, width, height);
     } else if (materiaId === 'sonidos') {
-      this.renderMusicaBiome(ctx, width, height);
+      // Pradera verde exuberante como en la referencia Zelda (arriba/abajo del piano)
+      this.renderGrassBackground(ctx, width, height, season);
+      // Notas flotantes sutiles sobre el pasto (no piano plano negro)
+      ctx.fillStyle = 'rgba(249,115,22,0.28)';
+      ctx.font = 'bold 20px sans-serif';
+      const notes = ['🎵','🎶','🎼','🎷'];
+      for (let n=0;n<6;n++){
+        const nx = 110 + n*110 + this.hash2(n*33, 7)*12;
+        const ny = 395 + Math.sin(this.animTick*0.04 + n)*6;
+        ctx.fillText(notes[n % notes.length], nx, ny);
+      }
+      // Gramófonos como monumentos laterales (mantiene identidad musical)
+      this.renderGramophoneMonument(ctx, 90, 68);
+      this.renderGramophoneMonument(ctx, 670, 68);
     } else {
       this.renderInglesBiome(ctx, width, height);
     }
 
-    // Main Scenic Highway across the map
-    const pathY = 280;
-    ctx.fillStyle = '#b47834';
-    ctx.fillRect(0, pathY - 26, width, 52);
-    ctx.fillStyle = '#fde047';
-    ctx.fillRect(0, pathY - 20, width, 40);
-
-    // Highway stone borders & pavers
-    ctx.fillStyle = '#ca8a04';
-    ctx.fillRect(0, pathY - 22, width, 3);
-    ctx.fillRect(0, pathY + 18, width, 3);
-
-    for (let x = 12; x < width; x += 32) {
-      ctx.fillStyle = '#fef08a';
-      ctx.beginPath();
-      ctx.roundRect(x, pathY - 12, 20, 10, 3);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.roundRect(x + 14, pathY + 2, 20, 10, 3);
-      ctx.fill();
+    // 2. Velo orgánico sutil para unificar bioma con camino (evita el "rectángulo amarillo" feo)
+    ctx.fillStyle = 'rgba(12,18,30,0.18)';
+    ctx.fillRect(0, 0, width, height);
+    // Ruido luminoso muy suave
+    for (let i = 0; i < 18; i++) {
+      const rx = this.hash2(i * 91, i * 37) * width;
+      const ry = this.hash2(i * 53, i * 79) * height;
+      const r = 60 + this.hash2(i * 11, i * 19) * 90;
+      const g = ctx.createRadialGradient(rx, ry, 0, rx, ry, r);
+      g.addColorStop(0, 'rgba(255,255,255,0.07)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(rx, ry, r, 0, Math.PI * 2); ctx.fill();
     }
 
-    // Left exit back to Plaza
-    this.renderWoodenGate(ctx, 10, pathY - 45, '◀ Volver a Plaza');
+    // 3. Avenida principal — piedra orgánica o piano 3D si es Música (como referencia)
+    const pathY = 282;
+    if (materiaId === 'sonidos') {
+      // Piano como puente/calle principal con grosor (referencia Zelda)
+      this.renderPianoAvenue(ctx, pathY - 17, width);
+      // Tierra bajo piano con borde hierba (referencia: tierra marrón bajo piano)
+      ctx.fillStyle = '#8b6a3a';
+      ctx.fillRect(0, pathY + 30, width, 6);
+      // Brillo superior del piano
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      ctx.fillRect(0, pathY - 17, width, 4);
+    } else {
+      // Sombra difusa bajo avenida
+      ctx.fillStyle = 'rgba(20,14,8,0.22)';
+      ctx.beginPath();
+      ctx.ellipse(width / 2, pathY + 18, width * 0.48, 22, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Camino principal irregular
+      this.renderStonePath(ctx, -30, pathY - 2, width + 30, pathY + 6, 48);
+      // Segunda capa más clara para centro
+      this.renderStonePath(ctx, -20, pathY, width + 20, pathY + 2, 30, true);
+      // Bordes de piedra con desgaste
+      ctx.strokeStyle = 'rgba(95,72,32,0.22)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(-10, pathY - 22);
+      for (let x = 0; x < width + 10; x += 18) {
+        const jy = (this.hash2(x * 0.7, pathY) - 0.5) * 6;
+        ctx.lineTo(x, pathY - 22 + jy);
+      }
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-10, pathY + 24);
+      for (let x = 0; x < width + 10; x += 18) {
+        const jy = (this.hash2(x * 0.7 + 50, pathY + 10) - 0.5) * 6;
+        ctx.lineTo(x, pathY + 24 + jy);
+      }
+      ctx.stroke();
+      // Terraplén de tierra bajo el camino (profundidad Zelda referencia)
+      ctx.fillStyle = '#9c7a3c';
+      ctx.fillRect(0, pathY + 22, width, 8);
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.fillRect(0, pathY + 28, width, 2);
+    }
 
-    // The 4 Themed Cities (Bimesters 1 to 4)
+    // 4. Senderos de conexión hacia cada ciudad (no rectángulos amarillos)
     const citiesX = [180, 370, 560, 720];
-
     BIMESTRES_INFO.forEach((bInfo, idx) => {
       const cx = citiesX[idx];
       const isUnlocked = bInfo.id <= unlockedCityMax;
-      const isCurrentCity = bInfo.id === 1;
+      // Camino corto en L orgánica desde avenida hasta la puerta (usa dos segmentos para curva)
+      const midY = pathY - 42;
+      const col = isUnlocked ? undefined : '#9aa5b8';
+      // si está bloqueada, camino desaturado y con maleza
+      if (isUnlocked) {
+        this.renderStonePath(ctx, cx, pathY - 14, cx + (idx % 2 === 0 ? 8 : -8), 210, 22);
+        this.renderStonePath(ctx, cx + (idx % 2 === 0 ? 8 : -8), 210, cx, 170, 18, true);
+      } else {
+        ctx.fillStyle = 'rgba(148,163,184,0.22)';
+        ctx.beginPath(); ctx.roundRect(cx - 11, 210, 22, 62, 6); ctx.fill();
+        ctx.strokeStyle = 'rgba(100,116,139,0.25)'; ctx.lineWidth = 1; ctx.stroke();
+        // hierbas sobre camino bloqueado
+        for (let g = 0; g < 3; g++) {
+          const gy = 225 + g * 16;
+          ctx.fillStyle = '#4a7c2e';
+          ctx.fillRect(cx - 2, gy, 4, 6);
+          ctx.fillRect(cx + 6, gy + 4, 3, 5);
+        }
+      }
+      // Pequeña rotonda/plazoleta frente a cada ciudad
+      ctx.fillStyle = isUnlocked ? 'rgba(232,220,185,0.85)' : 'rgba(160,170,185,0.32)';
+      ctx.beginPath(); ctx.ellipse(cx, 214, 26, 10, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = isUnlocked ? 'rgba(0,0,0,0.18)' : 'rgba(0,0,0,0.10)';
+      ctx.beginPath(); ctx.ellipse(cx, 217, 22, 7, 0, 0, Math.PI * 2); ctx.fill();
+    });
 
-      // Connecting stone path from highway up to the city
-      ctx.fillStyle = isUnlocked ? '#fde047' : '#94a3b8';
-      ctx.fillRect(cx - 16, 210, 32, 50);
+    // 5. Portón oeste para volver a Plaza — con arco y antorchas
+    this.renderWoodenGate(ctx, 10, pathY - 45, '◀ Volver a Plaza');
+    // Antorchas laterales del portón (luz cálida)
+    for (let tx of [0, 54]) {
+      const txp = 18 + tx;
+      ctx.fillStyle = '#451a03'; ctx.fillRect(txp, pathY - 38, 4, 18);
+      if (this.animTick % 8 < 4) {
+        this.addFireParticle(txp + 2, pathY - 40);
+      }
+    }
 
-      // Render Themed City Gate / Castle
+    // 6. Decoración ambiental entre ciudades (árboles, faroles, parterres, cajas) — como en Plaza y City
+    // Faroles cada 2 ciudades y árboles en los laterales para romper el checker
+    this.renderLantern(ctx, 95, pathY - 18);
+    this.renderLantern(ctx, 295, pathY - 18);
+    this.renderLantern(ctx, 485, pathY - 18);
+    this.renderLantern(ctx, 675, pathY - 18);
+    this.renderTree(ctx, 70, 60, season);
+    this.renderTree(ctx, 720, 70, season);
+    this.renderFlowerPatch(ctx, 250, 360);
+    this.renderFlowerPatch(ctx, 610, 370);
+    this.renderWoodenBench(ctx, 260, pathY + 36);
+    this.renderWoodenBench(ctx, 620, pathY + 36);
+    this.renderTownCratesAndBarrels(ctx, 120, pathY - 52);
+    this.renderTownCratesAndBarrels(ctx, 700, pathY + 28);
+    // Partículas suaves
+    this.addSeasonalParticles(width, height, season);
+
+    // 7. Las 4 ciudades — arquitectura premium por materia + estado
+    BIMESTRES_INFO.forEach((bInfo, idx) => {
+      const cx = citiesX[idx];
+      const isUnlocked = bInfo.id <= unlockedCityMax;
+      const isCurrent = bInfo.id <= unlockedCityMax; // todas las desbloqueadas brillan sutil
       this.renderThemedCityBuilding(
         ctx,
         cx,
-        140,
+        126,
         bInfo.label,
         bInfo.name,
         bInfo.months,
         isUnlocked,
-        isCurrentCity,
+        isCurrent,
         materiaId,
         idx + 1,
         materia.color
       );
+      // Indicador de progreso: banderín en la ciudad activa, candado grande en bloqueada
+      if (isUnlocked && bInfo.id === unlockedCityMax) {
+        // Estandarte "¡Aquí!"
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath(); ctx.moveTo(cx + 42, 116); ctx.lineTo(cx + 56, 122); ctx.lineTo(cx + 42, 128); ctx.fill();
+        ctx.fillStyle = '#92400e'; ctx.font = 'bold 7px sans-serif'; ctx.fillText('★', cx + 44, 124);
+      }
+      if (!isUnlocked) {
+        // niebla sobre ciudad bloqueada
+        ctx.fillStyle = 'rgba(15,23,42,0.28)';
+        ctx.fillRect(cx - 46, 122, 92, 96);
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('🔒', cx, 182); ctx.textAlign = 'start';
+      }
     });
 
-    // Top Header Banner for Materia
-    this.renderMateriaHeaderPill(ctx, width / 2, 32, materia.name, materia.color);
+    // 8. Header superior
+    this.renderMateriaHeaderPill(ctx, width / 2, 30, materia.name, materia.color);
+    // 9. Viñeteado final para profundidad (como en Plaza)
+    this.renderVignette(ctx, width, height);
   }
 
   // --- THEMED BIOMES FOR THE 7 MATERIAS ---
@@ -1157,91 +1337,129 @@ export class PixelArtRenderer {
     const h = 76;
     const cx = x - w / 2;
 
-    // Ground Shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-    ctx.beginPath();
-    ctx.ellipse(x, y + h + 6, 46, 12, 0, 0, Math.PI * 2);
-    ctx.fill();
+    // Ground Shadow con gradiente
+    const shadowGrad = ctx.createRadialGradient(x, y + h + 4, 6, x, y + h + 4, 48);
+    shadowGrad.addColorStop(0, 'rgba(0,0,0,0.38)');
+    shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = shadowGrad;
+    ctx.beginPath(); ctx.ellipse(x, y + h + 6, 50, 14, 0, 0, Math.PI * 2); ctx.fill();
 
-    // Base Walls
-    ctx.fillStyle = isUnlocked ? '#f8fafc' : '#475569';
-    ctx.fillRect(cx, y + 24, w, h - 24);
-
-    // Subject-Themed Roof & Spire Styles
-    ctx.fillStyle = isUnlocked ? color : '#334155';
-    if (materiaId === 'matematicas') {
-      // Hexagonal Prismatic Roof
-      ctx.beginPath();
-      ctx.moveTo(cx - 6, y + 26);
-      ctx.lineTo(x, y - 14);
-      ctx.lineTo(cx + w + 6, y + 26);
-      ctx.fill();
-      // Crystal spire
-      ctx.fillStyle = '#67e8f9';
-      ctx.fillRect(x - 3, y - 24, 6, 12);
-    } else if (materiaId === 'lenguaje') {
-      // Open Book Spire Roof
-      ctx.beginPath();
-      ctx.moveTo(cx - 8, y + 26);
-      ctx.lineTo(x - 10, y - 6);
-      ctx.lineTo(x, y + 4);
-      ctx.lineTo(x + 10, y - 6);
-      ctx.lineTo(cx + w + 8, y + 26);
-      ctx.fill();
-    } else if (materiaId === 'ciencias') {
-      // Botanical Glass Solarium Dome Roof
-      ctx.beginPath();
-      ctx.arc(x, y + 24, 46, Math.PI, 0);
-      ctx.fill();
-    } else if (materiaId === 'historia') {
-      // Crenellated Citadel Castle Roof
-      ctx.fillRect(cx - 4, y, w + 8, 26);
-      for (let bx = cx - 4; bx < cx + w + 8; bx += 16) {
-        ctx.fillRect(bx, y - 8, 10, 8);
-      }
-    } else if (materiaId === 'luces') {
-      // Stained Glass Pavilion Dome
-      ctx.beginPath();
-      ctx.arc(x, y + 24, 46, Math.PI, 0);
-      ctx.fill();
-      ctx.fillStyle = '#fde047';
-      ctx.fillRect(x - 4, y - 18, 8, 18);
-    } else if (materiaId === 'sonidos') {
-      // Organ Pipe Spire Roof
-      ctx.beginPath();
-      ctx.moveTo(cx - 6, y + 26);
-      ctx.lineTo(x, y - 8);
-      ctx.lineTo(cx + w + 6, y + 26);
-      ctx.fill();
-      // Organ pipes
-      for (let op = -12; op <= 12; op += 8) {
-        ctx.fillStyle = '#fbbf24';
-        ctx.fillRect(x + op - 2, y - 18 - Math.abs(op), 4, 16);
-      }
+    // Base Walls con textura sutil + borde
+    const wallGrad = ctx.createLinearGradient(cx, y + 24, cx, y + h);
+    if (isUnlocked) {
+      wallGrad.addColorStop(0, '#fdfcf8');
+      wallGrad.addColorStop(0.45, '#f1f5f9');
+      wallGrad.addColorStop(1, '#e2e8f0');
     } else {
-      // English Manor Gable Roof
-      ctx.beginPath();
-      ctx.moveTo(cx - 8, y + 26);
-      ctx.lineTo(x, y - 10);
-      ctx.lineTo(cx + w + 8, y + 26);
-      ctx.fill();
+      wallGrad.addColorStop(0, '#475569');
+      wallGrad.addColorStop(1, '#334155');
+    }
+    ctx.fillStyle = wallGrad;
+    ctx.beginPath(); ctx.roundRect(cx, y + 24, w, h - 24, 4); ctx.fill();
+    // Ladrillo/mortero sutil
+    ctx.strokeStyle = isUnlocked ? 'rgba(148,163,184,0.22)' : 'rgba(30,41,59,0.35)';
+    ctx.lineWidth = 0.8;
+    for (let by = y + 32; by < y + h - 4; by += 10) {
+      ctx.beginPath(); ctx.moveTo(cx + 4, by); ctx.lineTo(cx + w - 4, by); ctx.stroke();
+      if ((by / 10) % 2 === 0) {
+        ctx.beginPath(); ctx.moveTo(cx + w/2, by); ctx.lineTo(cx + w/2, by + 10); ctx.stroke();
+      }
+    }
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 1; ctx.strokeRect(cx+0.5, y+24.5, w-1, h-24-1);
+    // Ventanas iluminadas si está desbloqueada
+    if (isUnlocked) {
+      const winY = y + 36;
+      for (let wx of [cx + 12, cx + w - 26]) {
+        ctx.fillStyle = '#1e293b'; ctx.fillRect(wx, winY, 14, 16);
+        const glow = 0.55 + Math.sin(this.animTick * 0.08 + x) * 0.12;
+        ctx.fillStyle = `rgba(253,224,71,${glow})`; ctx.fillRect(wx+2, winY+2, 10, 12);
+        ctx.fillStyle = '#451a03'; ctx.fillRect(wx+6, winY+2, 2, 12); ctx.fillRect(wx+2, winY+7, 10, 2);
+        // reflejo
+        ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fillRect(wx+3, winY+3, 3, 4);
+      }
     }
 
-    // Grand Portal Entrance
-    ctx.fillStyle = isUnlocked ? '#0f172a' : '#1e293b';
-    ctx.beginPath();
-    ctx.roundRect(x - 14, y + h - 28, 28, 28, [12, 12, 0, 0]);
-    ctx.fill();
-
-    if (isUnlocked) {
-      ctx.fillStyle = '#fbbf24';
-      ctx.beginPath();
-      ctx.arc(x, y + h - 14, 8, 0, Math.PI * 2);
-      ctx.fill();
+    // Subject-Themed Roof & Spire Styles — premium con sombras
+    // Sombra del techo
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.beginPath(); ctx.ellipse(x, y + 28, 48, 7, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = isUnlocked ? color : '#334155';
+    if (materiaId === 'matematicas') {
+      ctx.beginPath(); ctx.moveTo(cx - 6, y + 26); ctx.lineTo(x, y - 14); ctx.lineTo(cx + w + 6, y + 26); ctx.fill();
+      // Tejas hexagonales + spire cristal con brillo
+      ctx.fillStyle = 'rgba(255,255,255,0.28)'; ctx.beginPath(); ctx.moveTo(x-10, y-2); ctx.lineTo(x, y-10); ctx.lineTo(x+10, y-2); ctx.strokeStyle='rgba(255,255,255,0.35)'; ctx.lineWidth=1; ctx.stroke();
+      ctx.fillStyle = '#67e8f9'; ctx.fillRect(x - 3, y - 24, 6, 12);
+      ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.fillRect(x-1, y-22, 2, 6);
+    } else if (materiaId === 'lenguaje') {
+      ctx.beginPath(); ctx.moveTo(cx - 8, y + 26); ctx.lineTo(x - 10, y - 6); ctx.lineTo(x, y + 4); ctx.lineTo(x + 10, y - 6); ctx.lineTo(cx + w + 8, y + 26); ctx.fill();
+      // Lomo de libro dorado
+      ctx.fillStyle = '#fde047'; ctx.fillRect(x-1, y-6, 2, 10);
+    } else if (materiaId === 'ciencias') {
+      const domeGrad = ctx.createRadialGradient(x, y+18, 8, x, y+18, 46);
+      domeGrad.addColorStop(0, isUnlocked ? '#86efac' : '#475569'); domeGrad.addColorStop(1, isUnlocked ? color : '#334155');
+      ctx.fillStyle = domeGrad; ctx.beginPath(); ctx.arc(x, y + 24, 46, Math.PI, 0); ctx.fill();
+      // Nervaduras de invernadero
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth=1;
+      for (let a=-0.7; a<=0.7; a+=0.35){ ctx.beginPath(); ctx.moveTo(x, y+24); ctx.lineTo(x+Math.cos(Math.PI+a)*46, y+24+Math.sin(Math.PI+a)*22); ctx.stroke(); }
+    } else if (materiaId === 'historia') {
+      ctx.fillRect(cx - 4, y, w + 8, 26);
+      for (let bx = cx - 4; bx < cx + w + 8; bx += 16) { ctx.fillRect(bx, y - 8, 10, 8); }
+      ctx.fillStyle='rgba(0,0,0,0.18)'; ctx.fillRect(cx-4, y+18, w+8, 4);
+    } else if (materiaId === 'luces') {
+      const domeGrad2 = ctx.createRadialGradient(x, y+16, 6, x, y+16, 46);
+      domeGrad2.addColorStop(0, '#fde68a'); domeGrad2.addColorStop(1, color); ctx.fillStyle=domeGrad2;
+      ctx.beginPath(); ctx.arc(x, y + 24, 46, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = '#fde047'; ctx.fillRect(x - 4, y - 18, 8, 18);
+      ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.fillRect(x-2, y-16, 2, 10);
+    } else if (materiaId === 'sonidos') {
+      // Casa cabaña acogedora con techo naranja (referencia) — desbloqueada naranja, bloqueada azul oscuro
+      ctx.fillStyle = isUnlocked ? '#f97316' : '#334155';
+      ctx.beginPath(); ctx.moveTo(cx - 6, y + 26); ctx.lineTo(x, y - 18); ctx.lineTo(cx + w + 6, y + 26); ctx.fill();
+      // Chimenea a un lado si desbloqueada
+      if (isUnlocked) {
+        ctx.fillStyle = '#57534e'; ctx.fillRect(x + w/2 + 18, y - 10, 10, 18);
+        ctx.fillStyle = '#44403c'; ctx.fillRect(x + w/2 + 18, y - 12, 10, 4);
+        // humo si anim
+        if (this.animTick % 16 < 8) {
+          ctx.fillStyle = 'rgba(255,255,255,0.55)';
+          ctx.beginPath(); ctx.arc(x + w/2 + 23 + Math.sin(this.animTick*0.1)*2, y - 18, 3, 0, Math.PI*2); ctx.fill();
+        }
+      }
+      // Nota musical en el frontón si desbloqueada
+      if (isUnlocked) {
+        ctx.fillStyle = '#fef08a';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('♪', x, y - 2);
+        ctx.textAlign = 'start';
+      }
     } else {
-      ctx.fillStyle = '#ef4444';
-      ctx.font = 'bold 14px sans-serif';
-      ctx.fillText('🔒', x - 7, y + h - 8);
+      ctx.beginPath(); ctx.moveTo(cx - 8, y + 26); ctx.lineTo(x, y - 10); ctx.lineTo(cx + w + 8, y + 26); ctx.fill();
+      // Entramado inglés
+      ctx.strokeStyle='rgba(60,40,20,0.22)'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(cx+12, y+8); ctx.lineTo(cx+w-12, y+8); ctx.stroke();
+    }
+
+    // Grand Portal Entrance con marco y luz
+    ctx.fillStyle = isUnlocked ? '#0f172a' : '#1e293b';
+    ctx.beginPath(); ctx.roundRect(x - 14, y + h - 28, 28, 28, [12, 12, 0, 0]); ctx.fill();
+    // Marco piedra
+    ctx.strokeStyle = isUnlocked ? '#e7c65a' : '#475569'; ctx.lineWidth=2.2; ctx.stroke();
+    // Luz pulsante interior si desbloqueada
+    if (isUnlocked) {
+      const pulse = 0.65 + Math.sin(this.animTick * 0.12 + x*0.05) * 0.22;
+      ctx.fillStyle = `rgba(253,224,71,${pulse})`;
+      ctx.beginPath(); ctx.arc(x, y + h - 14, 7.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.beginPath(); ctx.arc(x-2, y+h-16, 2.2,0,Math.PI*2); ctx.fill();
+      // Antorcha parpadeante a la puerta
+      if (this.animTick % 14 < 7) {
+        ctx.fillStyle='rgba(251,146,60,0.55)'; ctx.beginPath(); ctx.ellipse(x, y+h+2, 10, 3,0,0,Math.PI*2); ctx.fill();
+      }
+    } else {
+      // Candado metálico
+      ctx.fillStyle='#1e293b'; ctx.beginPath(); ctx.roundRect(x-7, y+h-16, 14,11,3); ctx.fill();
+      ctx.strokeStyle='#fbbf24'; ctx.lineWidth=1.2; ctx.stroke();
+      ctx.fillStyle='#fbbf24'; ctx.beginPath(); ctx.arc(x, y+h-18, 5, Math.PI,0); ctx.stroke();
+      ctx.fillStyle='#e11d48'; ctx.font='bold 10px sans-serif'; ctx.textAlign='center'; ctx.fillText('🔒', x, y+h-7); ctx.textAlign='start';
     }
 
     // City Name Badge Banner (Fantasy Heraldic Plaque)

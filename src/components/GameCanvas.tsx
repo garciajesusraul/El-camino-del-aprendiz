@@ -74,6 +74,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const keysRef = useRef<{ [key: string]: boolean }>({});
   const playerRef = useRef(player);
   playerRef.current = player;
+  const walkEnterFramesRef = useRef<{ key: string; frames: number } | null>(null);
+  const lastWalkTriggerRef = useRef<string | null>(null);
+  const walkSuppressUntilRef = useRef<number>(0);
 
   // Listen to browser fullscreen changes
   useEffect(() => {
@@ -103,6 +106,124 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const handleVirtualDirUp = (code: string) => {
     keysRef.current[code] = false;
   };
+
+  // Debounce para evitar doble entrada por click/walk
+  const lastEnterRef = useRef<number>(0);
+  const canEnter = useCallback(() => {
+    const now = Date.now();
+    if (now - lastEnterRef.current < 600) return false;
+    lastEnterRef.current = now;
+    return true;
+  }, []);
+
+  // Click en el canvas -> traducir a coordenadas 800x560 y disparar entrada
+  const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (activeDialogue) {
+      if (activeDialogue.onPrimaryAction) activeDialogue.onPrimaryAction();
+      else setActiveDialogue(null);
+      return;
+    }
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = 800 / rect.width;
+    const scaleY = 560 / rect.height;
+    const cx = (e.clientX - rect.left) * scaleX;
+    const cy = (e.clientY - rect.top) * scaleY;
+
+    if (state.currentScene === 'PLAZA') {
+      if (state.profile?.gradeLevel === 'kinder') {
+        if (Math.hypot(cx - 400, cy - 490) < 70) {
+          if (!canEnter()) return;
+          sound.playSelect();
+          onSceneChange('MATERIA_MAP', { materia: KINDER_MATERIA.id });
+          return;
+        }
+      } else {
+        for (const mat of MATERIAS) {
+          if (Math.hypot(cx - mat.portalX, cy - mat.portalY) < 70) {
+            if (!canEnter()) return;
+            sound.playSelect();
+            onSceneChange('MATERIA_MAP', { materia: mat.id });
+            return;
+          }
+        }
+      }
+      if (Math.hypot(cx - 400, cy - 310) < 75) {
+        sound.playSelect();
+        setActiveDialogue({
+          speakerName: 'Fuente de la Sabiduría',
+          speakerRole: 'Monumento Central de la Plaza',
+          avatarEmoji: '⛲',
+          avatarBg: 'bg-sky-700',
+          text: 'Las aguas cristalinas reflejan los 7 caminos del conocimiento. ¡Elegí un portal para viajar!',
+          primaryActionLabel: 'Continuar Explorando [A]',
+          onPrimaryAction: () => setActiveDialogue(null),
+        });
+      }
+    } else if (state.currentScene === 'MATERIA_MAP') {
+      const citiesX = [180, 370, 560, 720];
+      const maxUnlocked = (state.currentMateria && state.profile.unlockedCities[state.currentMateria]) || 1;
+      for (let idx = 0; idx < citiesX.length; idx++) {
+        const cxx = citiesX[idx];
+        if (cx >= cxx - 46 && cx <= cxx + 46 && cy >= 140 && cy <= 244) {
+          const cityNum = idx + 1;
+          if (cityNum <= maxUnlocked) {
+            if (!canEnter()) return;
+            sound.playSelect();
+            onSceneChange('CITY_MAP', { city: cityNum });
+          } else {
+            sound.playStep();
+            const bInfo = BIMESTRES_INFO[idx];
+            setActiveDialogue({
+              speakerName: `Guardia de ${bInfo.name}`,
+              speakerRole: 'Ciudad Bloqueada',
+              avatarEmoji: '🔒',
+              avatarBg: 'bg-slate-700',
+              text: `Esta ciudad es del ${bInfo.label} (${bInfo.months}). Completá la ciudad anterior para avanzar.`,
+              primaryActionLabel: 'Entendido [A]',
+              onPrimaryAction: () => setActiveDialogue(null),
+            });
+          }
+          return;
+        }
+      }
+    } else if (state.currentScene === 'CITY_MAP') {
+      const street1Y = 190;
+      const street2Y = 410;
+      const row1X = [135, 285, 435, 585];
+      for (let i = 0; i < 4; i++) {
+        const hx = row1X[i];
+        const houseRect = { x: hx, y: street1Y - 95, w: 78, h: 58 };
+        if (cx >= houseRect.x - 6 && cx <= houseRect.x + houseRect.w + 6 && cy >= houseRect.y - 10 && cy <= houseRect.y + houseRect.h + 10) {
+          sound.playSelect();
+          onOpenNotebook(state.currentMateria || 'matematicas', state.currentCity, i + 1);
+          lastWalkTriggerRef.current = `city:house:${i + 1}`;
+          walkSuppressUntilRef.current = Date.now() + 1800;
+          walkEnterFramesRef.current = null;
+          return;
+        }
+      }
+      for (let i = 0; i < 4; i++) {
+        const hx = row1X[i];
+        const houseRect = { x: hx, y: street2Y - 95, w: 78, h: 58 };
+        if (cx >= houseRect.x - 6 && cx <= houseRect.x + houseRect.w + 6 && cy >= houseRect.y - 10 && cy <= houseRect.y + houseRect.h + 10) {
+          sound.playSelect();
+          onOpenNotebook(state.currentMateria || 'matematicas', state.currentCity, i + 5);
+          lastWalkTriggerRef.current = `city:house:${i + 5}`;
+          walkSuppressUntilRef.current = Date.now() + 1800;
+          walkEnterFramesRef.current = null;
+          return;
+        }
+      }
+    } else if (state.currentScene === 'HOUSE') {
+      if (cy > 430 && cx > 310 && cx < 490) {
+        if (!canEnter()) return;
+        sound.playDoor();
+        onSceneChange('PLAZA');
+      }
+    }
+  }, [activeDialogue, state, onSceneChange, onOpenNotebook, canEnter]);
 
   // Detect season
   const getEffectiveSeason = useCallback(() => {
@@ -526,9 +647,127 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           if (nextX < 80) {
             promptText = '◀ Presioná [B] para volver al mapa';
           } else {
-            promptText = '🏡 Presioná [A] para abrir la Libreta de Misiones [M]';
+            // Detect nearest house for better prompt
+            const row1X = [135, 285, 435, 585];
+            let nearWeek: number | null = null;
+            for (let i = 0; i < 4; i++) if (Math.abs(nextX - (row1X[i] + 39)) < 42 && Math.abs(nextY - 150) < 50) nearWeek = i + 1;
+            for (let i = 0; i < 4; i++) if (Math.abs(nextX - (row1X[i] + 39)) < 42 && Math.abs(nextY - 370) < 50) nearWeek = i + 5;
+            promptText = nearWeek ? `🏡 Semana ${nearWeek}: caminá a la puerta o clickeá / [A] para abrir` : '🏡 Caminá a una casa o clickeá para abrir la Libreta [M]';
           }
         }
+      }
+      // --- Entrada caminando: si te quedás ~180ms sobre una puerta/portal, entra solo ---
+      if (!activeDialogue) {
+        let walkKey: string | null = null;
+        let walkAction: (() => void) | null = null;
+        if (state.currentScene === 'HOUSE' && nextY > 430 && nextX > 310 && nextX < 490) {
+          walkKey = 'house:exit';
+          walkAction = () => { if (canEnter()) { sound.playDoor(); onSceneChange('PLAZA'); } };
+          promptText = '🚪 Caminá hacia la puerta o clickeá para salir • [A]';
+        } else if (state.currentScene === 'PLAZA') {
+          if (nextY < 120 && Math.abs(nextX - 400) < 70) {
+            walkKey = 'plaza:house';
+            walkAction = () => { if (canEnter()) { sound.playDoor(); onSceneChange('HOUSE'); } };
+          } else if (state.profile?.gradeLevel === 'kinder') {
+            if (Math.hypot(nextX - 400, nextY - 490) < 50) {
+              walkKey = 'plaza:kinder';
+              walkAction = () => { if (canEnter()) { sound.playSelect(); onSceneChange('MATERIA_MAP', { materia: KINDER_MATERIA.id }); } };
+            }
+          } else {
+            for (const mat of MATERIAS) {
+              if (Math.hypot(nextX - mat.portalX, nextY - mat.portalY) < 45) {
+                walkKey = `plaza:mat:${mat.id}`;
+                walkAction = () => { if (canEnter()) { sound.playSelect(); onSceneChange('MATERIA_MAP', { materia: mat.id }); } };
+                promptText = `▶ Caminá al portal o clickeá para entrar a ${mat.shortName} • [A]`;
+                break;
+              }
+            }
+          }
+        } else if (state.currentScene === 'MATERIA_MAP') {
+          const citiesX = [180, 370, 560, 720];
+          const maxUnlocked = (state.currentMateria && state.profile.unlockedCities[state.currentMateria]) || 1;
+          for (let idx = 0; idx < citiesX.length; idx++) {
+            const cx = citiesX[idx];
+            if (Math.abs(nextX - cx) < 38 && Math.abs(nextY - 238) < 48) {
+              const cityNum = idx + 1;
+              if (cityNum <= maxUnlocked) {
+                walkKey = `materia:city:${cityNum}`;
+                const cn = cityNum;
+                walkAction = () => { if (canEnter()) { sound.playSelect(); onSceneChange('CITY_MAP', { city: cn }); } };
+                const bInfo = BIMESTRES_INFO[idx];
+                promptText = `🏛️ Entrá caminando o clickeá para ${bInfo.name} • [A]`;
+              }
+              break;
+            }
+          }
+        } else if (state.currentScene === 'CITY_MAP') {
+          const row1X = [135, 285, 435, 585];
+          for (let i = 0; i < 4; i++) {
+            const hx = row1X[i];
+            if (Math.abs(nextX - (hx + 39)) < 28 && Math.abs(nextY - 150) < 36) {
+              walkKey = `city:house:${i + 1}`;
+              const w = i + 1;
+              walkAction = () => {
+                sound.playSelect();
+                onOpenNotebook(state.currentMateria || 'matematicas', state.currentCity, w);
+                setPlayer((prev) => ({ ...prev, y: prev.y + 18 }));
+              };
+              promptText = `🏡 Semana ${w}: entrá caminando o clickeá • [A]`;
+              break;
+            }
+          }
+          if (!walkKey) {
+            for (let i = 0; i < 4; i++) {
+              const hx = row1X[i];
+              if (Math.abs(nextX - (hx + 39)) < 28 && Math.abs(nextY - 370) < 36) {
+                walkKey = `city:house:${i + 5}`;
+                const w = i + 5;
+                walkAction = () => {
+                  sound.playSelect();
+                  onOpenNotebook(state.currentMateria || 'matematicas', state.currentCity, w);
+                  setPlayer((prev) => ({ ...prev, y: prev.y + 18 }));
+                };
+                promptText = `🏡 Semana ${w}: entrá caminando o clickeá • [A]`;
+                break;
+              }
+            }
+          }
+        }
+
+        const nowMs = Date.now();
+        const isCooldown = nowMs < walkSuppressUntilRef.current;
+        const isSameAsLast = walkKey !== null && lastWalkTriggerRef.current === walkKey;
+
+        if (!walkKey) {
+          // Salió de la zona: libera el bloqueo de "misma puerta" pero respeta cooldown temporal
+          lastWalkTriggerRef.current = null;
+          walkEnterFramesRef.current = null;
+        } else if (isCooldown || isSameAsLast) {
+          // Bloqueado para niños: debe alejarse al menos 28px o esperar 1.4s. No cuenta frames.
+          walkEnterFramesRef.current = null;
+          // Si es la misma puerta, hint para que se mueva
+          if (isSameAsLast && state.currentScene === 'CITY_MAP') {
+            promptText = '↔️ Aleja al personaje de la puerta para volver a entrar';
+          }
+        } else if (walkKey && walkAction) {
+          const prev = walkEnterFramesRef.current;
+          if (prev && prev.key === walkKey) {
+            prev.frames++;
+            if (prev.frames > 11) {
+              walkEnterFramesRef.current = null;
+              lastWalkTriggerRef.current = walkKey;
+              walkSuppressUntilRef.current = Date.now() + 1400;
+              const actionToRun = walkAction;
+              setTimeout(() => actionToRun(), 0);
+            }
+          } else {
+            walkEnterFramesRef.current = { key: walkKey, frames: 1 };
+          }
+        } else {
+          walkEnterFramesRef.current = null;
+        }
+      } else {
+        walkEnterFramesRef.current = null;
       }
       setInteractionPrompt(promptText);
 
@@ -605,7 +844,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           id="gameCanvas"
           width={800}
           height={560}
-          className="w-full h-full object-contain block select-none max-w-full max-h-full"
+          onClick={handleCanvasClick}
+          className="w-full h-full object-contain block select-none max-w-full max-h-full cursor-pointer"
           style={{ imageRendering: 'pixelated' }}
         />
 
