@@ -344,134 +344,130 @@ export class PixelArtRenderer {
     const isKinder = profile?.gradeLevel === 'kinder';
 
     if (isKinder) {
-      // Single major South Road leading to Kinder Adventures Portal
       const kPortalX = 400;
       const kPortalY = 490;
-
-      ctx.strokeStyle = '#b47834';
-      ctx.lineWidth = 56;
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.lineTo(kPortalX, kPortalY);
-      ctx.stroke();
-
-      ctx.strokeStyle = '#fde047';
-      ctx.lineWidth = 44;
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.lineTo(kPortalX, kPortalY);
-      ctx.stroke();
-
-      // Rainbow stepping pavers for Kinder
+      // Camino orgánico de piedra/tierra hacia Kinder
+      this.renderStonePath(ctx, centerX, centerY, kPortalX, kPortalY, 46);
+      // Rainbow pavers for Kinder - piedras de colores con borde irregular
       const colors = ['#f43f5e', '#fb923c', '#facc15', '#4ade80', '#38bdf8', '#a855f7'];
       for (let s = 1; s <= 7; s++) {
         const sy = centerY + s * 22;
+        const sx = centerX + (s % 2 === 0 ? 6 : -6) + (this.hash2(s * 13, s * 7) - 0.5) * 4;
+        ctx.fillStyle = 'rgba(0,0,0,0.22)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy + 2, 8, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
         ctx.fillStyle = colors[s % colors.length];
         ctx.beginPath();
-        ctx.arc(centerX + (s % 2 === 0 ? 6 : -6), sy, 7, 0, Math.PI * 2);
+        // piedra irregular con esquinas suavizadas
+        ctx.roundRect(sx - 7, sy - 6, 14, 11, 3);
         ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+        ctx.lineWidth = 1.2;
         ctx.stroke();
+        // highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.fillRect(sx - 5, sy - 4, 6, 1.5);
       }
     } else {
-      // The 7 Radiating Spokes / Cobblestone Roads from central circle to outer portals
+      // 7 Caminos radiales orgánicos de piedra/tierra
       MATERIAS.forEach((mat) => {
-        const px = mat.portalX;
-        const py = mat.portalY;
-
-        // Draw the paved radial road connecting center circle to the portal
-        ctx.strokeStyle = '#b47834'; // dirt border
-        ctx.lineWidth = 42;
-        ctx.beginPath();
-        ctx.moveTo(centerX, centerY);
-        ctx.lineTo(px, py);
-        ctx.stroke();
-
-        ctx.strokeStyle = '#fde047'; // golden stone paving
-        ctx.lineWidth = 32;
-        ctx.beginPath();
-        ctx.moveTo(centerX, centerY);
-        ctx.lineTo(px, py);
-        ctx.stroke();
-
-        // Stepping stones along the road
-        const dx = px - centerX;
-        const dy = py - centerY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const steps = Math.floor(dist / 22);
-
-        for (let s = 2; s < steps; s++) {
-          const t = s / steps;
-          const sx = centerX + dx * t;
-          const sy = centerY + dy * t;
-          ctx.fillStyle = '#fef08a';
-          ctx.beginPath();
-          ctx.arc(sx + (s % 2 === 0 ? 3 : -3), sy, 5, 0, Math.PI * 2);
-          ctx.fill();
-        }
+        this.renderStonePath(ctx, centerX, centerY, mat.portalX, mat.portalY, 34);
       });
     }
 
-    // 3. North Road to House
-    ctx.strokeStyle = '#b47834';
-    ctx.lineWidth = 50;
-    ctx.beginPath();
-    ctx.moveTo(centerX, centerY);
-    ctx.lineTo(centerX, 45);
-    ctx.stroke();
+    // 3. Camino norte a casa — piedra clara irregular
+    this.renderStonePath(ctx, centerX, centerY, centerX, 45, 40, true);
 
-    ctx.strokeStyle = '#e2e8f0';
-    ctx.lineWidth = 38;
+    // 4. Plaza central — empedrado irregular detallado
+    // Sombra difusa bajo la plaza (profundidad)
+    ctx.fillStyle = 'rgba(20, 25, 15, 0.25)';
     ctx.beginPath();
-    ctx.moveTo(centerX, centerY);
-    ctx.lineTo(centerX, 45);
-    ctx.stroke();
-
-    // 4. Central Circular Stone Paved Plaza
-    // Dirt edge buffer
-    ctx.fillStyle = '#b47834';
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, plazaRadius + 14, 0, Math.PI * 2);
+    ctx.ellipse(centerX, centerY + 14, plazaRadius + 18, plazaRadius * 0.42 + 8, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Outer Stone rim
-    ctx.fillStyle = '#64748b';
+    // Base tierra compacta
+    ctx.fillStyle = '#7a5a32';
     ctx.beginPath();
-    ctx.arc(centerX, centerY, plazaRadius + 4, 0, Math.PI * 2);
+    ctx.arc(centerX, centerY, plazaRadius + 12, 0, Math.PI * 2);
     ctx.fill();
 
-    // Flagstone Cobblestone Floor
-    const stoneGrad = ctx.createRadialGradient(centerX, centerY, 10, centerX, centerY, plazaRadius);
-    stoneGrad.addColorStop(0, '#f8fafc');
-    stoneGrad.addColorStop(0.7, '#cbd5e1');
-    stoneGrad.addColorStop(1, '#94a3b8');
+    // Anillo exterior de piedra
+    ctx.fillStyle = '#5a6575';
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, plazaRadius + 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Empedrado: relleno con gradiente y piedras irregulares
+    const stoneGrad = ctx.createRadialGradient(centerX - 18, centerY - 22, 10, centerX, centerY, plazaRadius);
+    stoneGrad.addColorStop(0, '#e8eef5');
+    stoneGrad.addColorStop(0.45, '#d2dae6');
+    stoneGrad.addColorStop(0.85, '#b8c2d0');
+    stoneGrad.addColorStop(1, '#9aa5b5');
     ctx.fillStyle = stoneGrad;
     ctx.beginPath();
     ctx.arc(centerX, centerY, plazaRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    // Cobblestone carved circular rings
-    ctx.strokeStyle = '#64748b';
-    ctx.lineWidth = 1.5;
-    for (let r = 24; r < plazaRadius; r += 24) {
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
-      ctx.stroke();
-    }
+    // Borde interno sutil
+    ctx.strokeStyle = 'rgba(90,101,117,0.35)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, plazaRadius - 1, 0, Math.PI * 2);
+    ctx.stroke();
 
-    // Circular paver tiles
-    ctx.fillStyle = '#ffffff';
-    for (let r = 24; r < plazaRadius - 10; r += 24) {
-      const count = Math.floor((r * 2 * Math.PI) / 22);
+    // Piedras irregulares del empedrado — distribución radial con jitter determinista
+    const stoneColors = ['#f1f5f9', '#e2e8f0', '#cbd5e1', '#dde3ec', '#f8fafc'];
+    for (let ring = 1; ring <= 4; ring++) {
+      const r = 18 + ring * 22;
+      const count = Math.floor((r * 2 * Math.PI) / 18);
       for (let i = 0; i < count; i++) {
-        const theta = (i / count) * Math.PI * 2;
-        const cx = centerX + Math.cos(theta) * r;
-        const cy = centerY + Math.sin(theta) * r;
+        const baseTheta = (i / count) * Math.PI * 2;
+        const jTheta = (this.hash2(ring * 10 + i, ring * 7) - 0.5) * 0.18;
+        const jR = (this.hash2(ring * 13, i * 11) - 0.5) * 10;
+        const theta = baseTheta + jTheta;
+        const rr = r + jR;
+        const cx = centerX + Math.cos(theta) * rr;
+        const cy = centerY + Math.sin(theta) * rr * 0.92; // leve perspectiva
+        const w = 6 + this.hash2(i * 3, ring * 19) * 5;
+        const h = 4 + this.hash2(i * 7, ring * 23) * 3.5;
+        const rot = theta + this.hash2(i * 17, ring * 3) * 0.5;
+        const col = stoneColors[Math.floor(this.hash2(i * 11, ring * 31) * stoneColors.length) % stoneColors.length];
+
+        // sombra de la piedra
+        ctx.fillStyle = 'rgba(60,70,85,0.18)';
         ctx.beginPath();
-        ctx.ellipse(cx, cy, 5, 3.5, theta, 0, Math.PI * 2);
+        ctx.ellipse(cx + 1, cy + 1.5, w * 0.55, h * 0.45, rot, 0, Math.PI * 2);
+        ctx.fill();
+
+        // piedra
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, w * 0.5, h * 0.42, rot, 0, Math.PI * 2);
+        ctx.fill();
+
+        // highlight superior
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.beginPath();
+        ctx.ellipse(cx - 1, cy - 1, w * 0.22, h * 0.18, rot, 0, Math.PI * 2);
         ctx.fill();
       }
+    }
+
+    // Piedras pequeñas de relleno aleatorio dentro de la plaza
+    for (let p = 0; p < 28; p++) {
+      const px = this.hash2(p * 41, p * 59);
+      const py = this.hash2(p * 73, p * 37);
+      const ang = px * Math.PI * 2;
+      const rad = py * (plazaRadius - 14);
+      const cx = centerX + Math.cos(ang) * rad;
+      const cy = centerY + Math.sin(ang) * rad * 0.92;
+      if (Math.sqrt((cx - centerX) ** 2 + (cy - centerY) ** 2) > plazaRadius - 6) continue;
+      const s = 2 + px * 2.5;
+      ctx.fillStyle = 'rgba(120,130,145,0.45)';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, s, s * 0.7, px * Math.PI, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     // 5. Central 3-Phase Fountain (Overworld.png Asset Style)
@@ -517,8 +513,150 @@ export class PixelArtRenderer {
     this.renderWoodenBench(ctx, centerX + 25, centerY + 80);
     this.renderTownCratesAndBarrels(ctx, 540, 150);
 
-    // 10. Dynamic World Animation: Flying birds across the sky
+    // 10. Viñeteado sutil + sombreado ambiental (profundidad)
+    this.renderVignette(ctx, width, height);
+
+    // 11. Dynamic World Animation: Flying birds across the sky
     this.renderFlyingBirds(ctx, width, height);
+  }
+
+  // --- HELPER: viñeteado sutil para profundidad ---
+  private renderVignette(ctx: CanvasRenderingContext2D, width: number, height: number) {
+    const grad = ctx.createRadialGradient(width * 0.5, height * 0.5, Math.min(width, height) * 0.45, width * 0.5, height * 0.5, Math.max(width, height) * 0.85);
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(0.75, 'rgba(0,0,0,0)');
+    grad.addColorStop(1, 'rgba(18, 28, 15, 0.28)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+    // luz superior sutil
+    const topLight = ctx.createLinearGradient(0, 0, 0, 120);
+    topLight.addColorStop(0, 'rgba(255,255,255,0.06)');
+    topLight.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = topLight;
+    ctx.fillRect(0, 0, width, 90);
+  }
+
+  // --- HELPER: camino de piedra/tierra orgánico con borde irregular y piedritas ---
+  private renderStonePath(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, width: number, lightVariant: boolean = false) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len < 1) return;
+    const ux = dx / len;
+    const uy = dy / len;
+    const px = -uy;
+    const py = ux;
+    const wHalf = width / 2;
+    const seg = Math.ceil(len / 14);
+    // generar borde irregular con hash
+    const leftPts: { x: number; y: number }[] = [];
+    const rightPts: { x: number; y: number }[] = [];
+    for (let i = 0; i <= seg; i++) {
+      const t = i / seg;
+      const bx = x1 + dx * t;
+      const by = y1 + dy * t;
+      const jitter = (this.hash2(t * 97, width * 13) - 0.5) * (width * 0.18);
+      const j2 = (this.hash2(t * 53 + 10, width * 7) - 0.5) * (width * 0.14);
+      leftPts.push({ x: bx + px * (wHalf + jitter), y: by + py * (wHalf + jitter) });
+      rightPts.push({ x: bx + px * (-wHalf + j2), y: by + py * (-wHalf + j2) });
+    }
+    // sombra sutil del camino
+    ctx.fillStyle = 'rgba(45, 30, 12, 0.18)';
+    ctx.beginPath();
+    ctx.moveTo(leftPts[0].x + 2, leftPts[0].y + 3);
+    for (let i = 1; i < leftPts.length; i++) ctx.lineTo(leftPts[i].x + 2, leftPts[i].y + 3);
+    for (let i = rightPts.length - 1; i >= 0; i--) ctx.lineTo(rightPts[i].x + 2, rightPts[i].y + 3);
+    ctx.closePath();
+    ctx.fill();
+
+    // borde tierra oscuro irregular
+    ctx.fillStyle = lightVariant ? '#9a8a6a' : '#7a5a32';
+    ctx.beginPath();
+    ctx.moveTo(leftPts[0].x, leftPts[0].y);
+    for (let i = 1; i < leftPts.length; i++) ctx.lineTo(leftPts[i].x, leftPts[i].y);
+    for (let i = rightPts.length - 1; i >= 0; i--) ctx.lineTo(rightPts[i].x, rightPts[i].y);
+    ctx.closePath();
+    ctx.fill();
+
+    // relleno central piedra — con margen interno
+    const innerLeft = leftPts.map((p, i) => {
+      const t = i / seg;
+      const inset = 4 + this.hash2(t * 33, 1) * 2;
+      const cx = x1 + dx * t + px * inset;
+      const cy = y1 + dy * t + py * inset;
+      return { x: cx + px * (wHalf - 6), y: cy + py * (wHalf - 6) };
+    });
+    const innerRight = rightPts.map((p, i) => {
+      const t = i / seg;
+      const inset = 4 + this.hash2(t * 33 + 5, 2) * 2;
+      const cx = x1 + dx * t + px * inset;
+      const cy = y1 + dy * t + py * inset;
+      return { x: cx + px * (-wHalf + 6), y: cy + py * (-wHalf + 6) };
+    });
+    // gradiente piedra
+    const midX = (x1 + x2) / 2;
+    const midY = (y1 + y2) / 2;
+    const stoneBase = ctx.createLinearGradient(midX - px * wHalf, midY - py * wHalf, midX + px * wHalf, midY + py * wHalf);
+    if (lightVariant) {
+      stoneBase.addColorStop(0, '#d8d0c0');
+      stoneBase.addColorStop(0.5, '#e8ddd0');
+      stoneBase.addColorStop(1, '#c8beb0');
+    } else {
+      stoneBase.addColorStop(0, '#c9b896');
+      stoneBase.addColorStop(0.5, '#e0d3b2');
+      stoneBase.addColorStop(1, '#b8a98a');
+    }
+    ctx.fillStyle = stoneBase;
+    ctx.beginPath();
+    ctx.moveTo(innerLeft[0].x, innerLeft[0].y);
+    for (let i = 1; i < innerLeft.length; i++) ctx.lineTo(innerLeft[i].x, innerLeft[i].y);
+    for (let i = innerRight.length - 1; i >= 0; i--) ctx.lineTo(innerRight[i].x, innerRight[i].y);
+    ctx.closePath();
+    ctx.fill();
+
+    // piedritas / losetas irregulares sobre el camino
+    const pebbleColors = lightVariant ? ['#f1ece2', '#e6ddd0', '#d6c9b5', '#c9bca8'] : ['#e8dcc0', '#d9c9a8', '#c9b896', '#a99578'];
+    const pebbleCount = Math.floor(len / 16);
+    for (let s = 0; s < pebbleCount; s++) {
+      const t = (s + 0.5) / pebbleCount;
+      const jitterT = (this.hash2(s * 19, width) - 0.5) * 0.08;
+      const tt = Math.max(0.08, Math.min(0.92, t + jitterT));
+      const bx = x1 + dx * tt;
+      const by = y1 + dy * tt;
+      const lateral = (this.hash2(s * 31, width * 2) - 0.5) * (width - 14);
+      const cx = bx + px * lateral;
+      const cy = by + py * lateral;
+      const pw = 5 + this.hash2(s * 7, width * 3) * 5;
+      const ph = 3 + this.hash2(s * 11, width * 5) * 3;
+      const rot = this.hash2(s * 23, width * 7) * Math.PI;
+      const col = pebbleColors[Math.floor(this.hash2(s * 13, width) * pebbleColors.length) % pebbleColors.length];
+      // sombra piedrita
+      ctx.fillStyle = 'rgba(90, 70, 40, 0.18)';
+      ctx.beginPath();
+      ctx.ellipse(cx + 0.8, cy + 1, pw * 0.5, ph * 0.5, rot, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, pw * 0.48, ph * 0.48, rot, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.beginPath();
+      ctx.ellipse(cx - 0.7, cy - 0.6, pw * 0.18, ph * 0.18, rot, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // surcos de desgaste centrales sutiles
+    ctx.strokeStyle = lightVariant ? 'rgba(120,110,95,0.12)' : 'rgba(90,65,30,0.10)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i <= seg; i++) {
+      const t = i / seg;
+      const bx = x1 + dx * t + px * (this.hash2(t * 77, width) - 0.5) * 3;
+      const by = y1 + dy * t + py * (this.hash2(t * 77, width) - 0.5) * 3;
+      if (i === 0) ctx.moveTo(bx, by);
+      else ctx.lineTo(bx, by);
+    }
+    ctx.stroke();
   }
 
   // Animated Birds flying across the sky with natural wing flapping
@@ -1898,56 +2036,155 @@ export class PixelArtRenderer {
 
   // --- HELPER PIXEL ART SUB-COMPONENTS ---
 
+  // deterministic pseudo-random 0..1 from coordinates
+  private hash2(x: number, y: number): number {
+    const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+    return n - Math.floor(n);
+  }
+
   private renderGrassBackground(ctx: CanvasRenderingContext2D, width: number, height: number, season: string) {
-    let baseGrass = '#48b838';
-    let darkGrass = '#389828';
-    let lightGrass = '#60d048';
-    let flowerColors = ['#fde047', '#f472b6', '#38bdf8', '#ffffff'];
+    // Paleta orgánica — verdes saturados naturales, sin neón
+    let baseTop = '#5a9e3a';
+    let baseBottom = '#3d7a2e';
+    let patchDark = '#2f5a22';
+    let patchLight = '#7cb85a';
+    let patchMid = '#4e8c33';
+    let flowerColors = ['#fde68a', '#f9a8d4', '#7dd3fc', '#ffffff', '#fbbf24'];
+    let bladeDark = '#2d4a1f';
+    let bladeLight = '#8fc46a';
 
     if (season === 'otono') {
-      baseGrass = '#ca8a04';
-      darkGrass = '#a16207';
-      lightGrass = '#eab308';
-      flowerColors = ['#ea580c', '#fbbf24', '#f97316'];
+      baseTop = '#7a9a3a';
+      baseBottom = '#5a7a2e';
+      patchDark = '#4a5d1f';
+      patchLight = '#a8b860';
+      patchMid = '#8a7a2e';
+      flowerColors = ['#fb923c', '#fde68a', '#f97316', '#fde047'];
+      bladeDark = '#3d4a1a';
+      bladeLight = '#c4b45a';
     } else if (season === 'primavera') {
-      baseGrass = '#4ade80';
-      darkGrass = '#22c55e';
-      lightGrass = '#86efac';
-      flowerColors = ['#f472b6', '#fda4af', '#fde047', '#ffffff'];
+      baseTop = '#66b848';
+      baseBottom = '#4a9a2e';
+      patchDark = '#3a7a22';
+      patchLight = '#9ad67a';
+      patchMid = '#5cb83a';
+      flowerColors = ['#f9a8d4', '#fda4af', '#fde68a', '#ffffff', '#c4b5fd'];
+      bladeDark = '#2e5a1f';
+      bladeLight = '#a8e08a';
     }
 
-    ctx.fillStyle = baseGrass;
+    // 1. Base con gradiente vertical suave (profundidad)
+    const bg = ctx.createLinearGradient(0, 0, 0, height);
+    bg.addColorStop(0, baseTop);
+    bg.addColorStop(0.55, patchMid);
+    bg.addColorStop(1, baseBottom);
+    ctx.fillStyle = bg;
     ctx.fillRect(0, 0, width, height);
 
-    ctx.fillStyle = darkGrass;
-    for (let y = 0; y < height; y += 32) {
-      for (let x = 0; x < width; x += 32) {
-        if ((x / 32 + y / 32) % 2 === 0) {
-          ctx.fillRect(x, y, 32, 32);
+    // 2. Ruido orgánico de luminosidad con elipses grandes y suaves
+    for (let y = 0; y < height; y += 48) {
+      for (let x = 0; x < width; x += 52) {
+        const h = this.hash2(x, y);
+        const hx = (h - 0.5) * 28;
+        const hy = (this.hash2(x + 99, y + 17) - 0.5) * 28;
+        const cx = x + 26 + hx;
+        const cy = y + 24 + hy;
+        if (cx < -10 || cx > width + 10 || cy < -10 || cy > height + 10) continue;
+        const r = 18 + this.hash2(x + 7, y + 31) * 22;
+        const isDark = h < 0.5;
+        ctx.fillStyle = isDark ? 'rgba(35, 70, 25, 0.18)' : 'rgba(160, 200, 120, 0.14)';
+        // elipse irregular
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, r, r * 0.7, this.hash2(x + 3, y + 9) * Math.PI, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // 3. Manchas de pasto más oscuro/claro con elipses pequeñas (variación de tono)
+    for (let y = 8; y < height; y += 22) {
+      for (let x = 8; x < width; x += 24) {
+        const h = this.hash2(x * 1.3, y * 1.7);
+        if (h < 0.22) {
+          ctx.fillStyle = patchDark;
+          ctx.globalAlpha = 0.22;
+          ctx.beginPath();
+          ctx.ellipse(x + (h - 0.5) * 10, y + (this.hash2(x + 50, y) - 0.5) * 8, 7, 4, h * Math.PI, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        } else if (h > 0.82) {
+          ctx.fillStyle = patchLight;
+          ctx.globalAlpha = 0.20;
+          ctx.beginPath();
+          ctx.ellipse(x, y, 6, 3.5, h * Math.PI, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
         }
       }
     }
 
-    for (let y = 12; y < height; y += 36) {
-      for (let x = 12; x < width; x += 36) {
-        const seed = (x * 13 + y * 7) % 11;
-        if (seed === 0) {
-          const col = flowerColors[(x + y) % flowerColors.length];
-          ctx.fillStyle = col;
-          ctx.fillRect(x, y - 1, 3, 3);
-          ctx.fillRect(x - 2, y, 3, 3);
-          ctx.fillRect(x + 2, y, 3, 3);
-          ctx.fillRect(x, y + 1, 3, 3);
-          ctx.fillStyle = '#fde047';
-          ctx.fillRect(x, y, 1, 1);
-        } else if (seed === 2 || seed === 5) {
-          ctx.fillStyle = lightGrass;
-          ctx.fillRect(x, y, 2, 4);
-          ctx.fillRect(x + 2, y - 1, 2, 5);
-          ctx.fillRect(x + 4, y, 2, 3);
+    // 4. Briznas de pasto (líneas 2-3px) dispersas con ruido determinista
+    ctx.lineWidth = 1.2;
+    ctx.lineCap = 'round';
+    for (let y = 6; y < height; y += 14) {
+      for (let x = 6; x < width; x += 18) {
+        const h = this.hash2(x * 2.1, y * 2.3);
+        if (h > 0.62) {
+          const bx = x + (this.hash2(x + 11, y + 13) - 0.5) * 8;
+          const by = y + (this.hash2(x + 23, y + 41) - 0.5) * 6;
+          const len = 2 + this.hash2(x + 77, y + 19) * 3;
+          const lean = (this.hash2(x + 5, y + 5) - 0.5) * 1.2;
+          ctx.strokeStyle = h > 0.84 ? bladeLight : bladeDark;
+          ctx.globalAlpha = 0.55;
+          ctx.beginPath();
+          ctx.moveTo(bx, by);
+          ctx.lineTo(bx + lean, by - len);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
         }
       }
     }
+
+    // 5. Flores dispersas con ruido determinista — sin patrón cuadrado, con pétalos y centro
+    for (let y = 16; y < height; y += 26) {
+      for (let x = 10; x < width; x += 28) {
+        const h = this.hash2(x * 0.9, y * 1.1 + 100);
+        if (h < 0.07) {
+          const fx = x + (this.hash2(x + 200, y) - 0.5) * 16;
+          const fy = y + (this.hash2(x, y + 200) - 0.5) * 16;
+          const col = flowerColors[Math.floor(this.hash2(x + 33, y + 33) * flowerColors.length) % flowerColors.length];
+          const scale = 0.9 + this.hash2(x + 77, y + 77) * 0.5;
+          // pétalos 4-5
+          ctx.fillStyle = col;
+          for (let p = 0; p < 5; p++) {
+            const ang = (p / 5) * Math.PI * 2;
+            const px = fx + Math.cos(ang) * 3.2 * scale;
+            const py = fy + Math.sin(ang) * 3.2 * scale;
+            ctx.beginPath();
+            ctx.arc(px, py, 1.7 * scale, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          // centro amarillo/blanco
+          ctx.fillStyle = h < 0.035 ? '#fef08a' : '#fef9c3';
+          ctx.beginPath();
+          ctx.arc(fx, fy, 1.2 * scale, 0, Math.PI * 2);
+          ctx.fill();
+          // tallito sutil
+          ctx.strokeStyle = 'rgba(45, 90, 30, 0.5)';
+          ctx.lineWidth = 0.9;
+          ctx.beginPath();
+          ctx.moveTo(fx, fy + 1);
+          ctx.lineTo(fx, fy + 3);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // 6. Sombreado suave de profundidad en bordes inferiores y motas de tierra
+    const vignGrass = ctx.createRadialGradient(width * 0.5, height * 0.5, Math.min(width, height) * 0.35, width * 0.5, height * 0.5, Math.max(width, height) * 0.75);
+    vignGrass.addColorStop(0, 'rgba(0,0,0,0)');
+    vignGrass.addColorStop(1, 'rgba(20, 35, 15, 0.18)');
+    ctx.fillStyle = vignGrass;
+    ctx.fillRect(0, 0, width, height);
   }
 
   // --- 3-PHASE CIRCULAR STONE FOUNTAIN (OVERWORLD.PNG ASSET STYLE) ---
@@ -2304,26 +2541,76 @@ export class PixelArtRenderer {
   }
 
   private renderTree(ctx: CanvasRenderingContext2D, x: number, y: number, season: string) {
-    let topColor = '#5cc840';
-    let midColor = '#3aa828';
-    let baseColor = '#207818';
+    let topColor = '#7ec84a';
+    let midColor = '#4e9b2e';
+    let baseColor = '#2f5e1f';
+    let deepShadow = '#1e3a15';
 
     if (season === 'otono') {
-      topColor = '#f59e0b';
+      topColor = '#fbbf24';
       midColor = '#d97706';
-      baseColor = '#92400e';
+      baseColor = '#7c3a0a';
+      deepShadow = '#4a1f05';
+    } else if (season === 'primavera') {
+      topColor = '#86efac';
+      midColor = '#4ade80';
+      baseColor = '#166534';
+      deepShadow = '#0f3a20';
     }
 
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+    // Sombra proyectada más voluminosa y suave (profundidad)
+    const shadowGrad = ctx.createRadialGradient(x + 4, y + 36, 4, x + 4, y + 36, 34);
+    shadowGrad.addColorStop(0, 'rgba(0,0,0,0.38)');
+    shadowGrad.addColorStop(0.55, 'rgba(0,0,0,0.22)');
+    shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = shadowGrad;
     ctx.beginPath();
-    ctx.ellipse(x, y + 36, 26, 12, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + 4, y + 36, 32, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // segunda sombra ocluida bajo tronco
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.beginPath();
+    ctx.ellipse(x + 8, y + 34, 18, 6, 0, 0, Math.PI * 2);
     ctx.fill();
 
+    // Tronco con textura de corteza
     ctx.fillStyle = '#5c3315';
-    ctx.fillRect(x - 6, y + 10, 12, 26);
+    ctx.beginPath();
+    ctx.roundRect(x - 7, y + 8, 14, 28, 3);
+    ctx.fill();
+    // veta clara
+    ctx.fillStyle = '#7a4a1f';
+    ctx.fillRect(x - 4, y + 10, 3, 24);
+    // veta oscura
     ctx.fillStyle = '#3d1d07';
-    ctx.fillRect(x + 1, y + 10, 5, 26);
+    ctx.fillRect(x + 3, y + 10, 4, 26);
+    // anillos de corteza sutiles
+    ctx.strokeStyle = 'rgba(45,20,5,0.35)';
+    ctx.lineWidth = 1;
+    for (let ly = y + 14; ly < y + 32; ly += 6) {
+      ctx.beginPath();
+      ctx.moveTo(x - 6, ly);
+      ctx.quadraticCurveTo(x, ly + 1, x + 6, ly);
+      ctx.stroke();
+    }
+    // base tronco ensanchada
+    ctx.fillStyle = '#3d1d07';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 36, 9, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
 
+    // Follaje voluminoso — 4 capas con sombras internas
+    // Capa trasera oscura (oclusión)
+    ctx.fillStyle = deepShadow;
+    ctx.beginPath();
+    ctx.arc(x - 16, y + 8, 19, 0, Math.PI * 2);
+    ctx.arc(x + 16, y + 8, 19, 0, Math.PI * 2);
+    ctx.arc(x, y - 2, 24, 0, Math.PI * 2);
+    ctx.arc(x - 8, y - 12, 17, 0, Math.PI * 2);
+    ctx.arc(x + 8, y - 12, 17, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Capa base
     ctx.fillStyle = baseColor;
     ctx.beginPath();
     ctx.arc(x - 14, y + 6, 18, 0, Math.PI * 2);
@@ -2331,18 +2618,34 @@ export class PixelArtRenderer {
     ctx.arc(x, y - 6, 22, 0, Math.PI * 2);
     ctx.fill();
 
+    // Capa media
     ctx.fillStyle = midColor;
     ctx.beginPath();
     ctx.arc(x - 12, y + 2, 16, 0, Math.PI * 2);
     ctx.arc(x + 12, y + 2, 16, 0, Math.PI * 2);
     ctx.arc(x, y - 8, 20, 0, Math.PI * 2);
+    ctx.arc(x - 9, y - 6, 13, 0, Math.PI * 2);
+    ctx.arc(x + 9, y - 6, 13, 0, Math.PI * 2);
     ctx.fill();
 
+    // Capa superior / highlight voluminoso
     ctx.fillStyle = topColor;
     ctx.beginPath();
     ctx.arc(x - 6, y - 10, 14, 0, Math.PI * 2);
     ctx.arc(x + 6, y - 10, 14, 0, Math.PI * 2);
     ctx.arc(x, y - 14, 14, 0, Math.PI * 2);
+    ctx.arc(x, y - 4, 10, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Brillo superior pequeño
+    ctx.fillStyle = 'rgba(255,255,255,0.22)';
+    ctx.beginPath();
+    ctx.ellipse(x - 4, y - 16, 7, 5, -0.35, 0, Math.PI * 2);
+    ctx.fill();
+    // mota de profundidad interna
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    ctx.beginPath();
+    ctx.ellipse(x + 5, y + 2, 9, 7, 0.4, 0, Math.PI * 2);
     ctx.fill();
   }
 

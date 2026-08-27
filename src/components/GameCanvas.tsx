@@ -114,7 +114,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     return 'primavera';
   }, [state.settings.season]);
 
-  // Initial spawn positions per scene
+  // Initial spawn positions per scene + Scene BGM integration
   useEffect(() => {
     setActiveDialogue(null);
     if (state.currentScene === 'HOUSE') {
@@ -131,7 +131,15 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     } else if (state.currentScene === 'CITY_MAP') {
       setPlayer((p) => ({ ...p, x: 70, y: 190, facing: 'right' }));
     }
-  }, [state.currentScene, state.currentMateria]);
+    // --- Música ambiental por pantalla (crossfade suave) ---
+    try {
+      sound.setScene(state.currentScene as 'HOUSE' | 'PLAZA' | 'MATERIA_MAP' | 'CITY_MAP', state.currentMateria || undefined);
+      // Si por autoplay policies no arrancó, intenta disparar ambient loop si musicEnabled
+      if (state.settings.musicEnabled && !sound.getIsBgmPlaying()) {
+        sound.playSceneBgm(state.currentScene as 'HOUSE' | 'PLAZA' | 'MATERIA_MAP' | 'CITY_MAP', state.currentMateria || undefined);
+      }
+    } catch {}
+  }, [state.currentScene, state.currentMateria, state.settings.musicEnabled]);
 
   // Back Navigation Handler [Tecla B / Escape / Backspace]
   const handleBackNavigation = useCallback(() => {
@@ -384,6 +392,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   // Main Game Loop (Physics + 60fps Render)
   useEffect(() => {
     let animId: number;
+    let ambientCheckCounter = 0;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -451,6 +460,20 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       } else {
         newAnimFrame = 0;
+      }
+
+      // Mantén BGM/ambient loops por escena si no está sonando (autoplay / tab hidden)
+      ambientCheckCounter++;
+      if (ambientCheckCounter > 120) {
+        ambientCheckCounter = 0;
+        if (state.settings.musicEnabled && !sound.getIsBgmPlaying()) {
+          try {
+            sound.playSceneBgm(
+              state.currentScene as 'HOUSE' | 'PLAZA' | 'MATERIA_MAP' | 'CITY_MAP',
+              state.currentMateria || undefined
+            );
+          } catch {}
+        }
       }
 
       // Check proximity prompts
