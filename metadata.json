@@ -1,0 +1,6 @@
+{
+  "name": "Ruta del Aprendiz - RPG Educativo 2D",
+  "description": "Plataforma de gamificación pedagógica infantil estilo RPG 2D Top-Down con progresión de KM, 7 materias, ciudades por bimestre, casas por semana y libreta de misiones.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
