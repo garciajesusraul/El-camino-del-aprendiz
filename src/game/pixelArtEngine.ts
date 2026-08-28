@@ -1559,9 +1559,10 @@ export class PixelArtRenderer {
       }
     });
 
-    // Add chimney smoke to cottages
-    row1X.forEach((hx) => this.addChimneySmoke(hx + 48, street1Y - 90));
-    row2X.forEach((hx) => this.addChimneySmoke(hx + 48, street2Y - 90));
+    // Humo solo en 2-3 casas (antes 8) — acogedor sin saturar
+    this.addChimneySmoke(row1X[0] + 48, street1Y - 90); // Sem 1
+    this.addChimneySmoke(row2X[1] + 48, street2Y - 90); // Sem 6
+    this.addChimneySmoke(row1X[3] + 48, street1Y - 90); // Sem 4 (opcional, se ve bien)
 
     // 4. Street Lamps, Trees & Flowers
     this.renderLantern(ctx, 75, street1Y - 25);

@@ -126,14 +126,31 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const scaleX = 800 / rect.width;
-    const scaleY = 560 / rect.height;
-    const cx = (e.clientX - rect.left) * scaleX;
-    const cy = (e.clientY - rect.top) * scaleY;
+    // object-contain: el canvas 800x560 se centra con letterboxing
+    const canvasAspect = 800 / 560;
+    const rectAspect = rect.width / rect.height;
+    let displayedWidth = rect.width;
+    let displayedHeight = rect.height;
+    let offsetX = 0;
+    let offsetY = 0;
+    if (rectAspect > canvasAspect) {
+      displayedHeight = rect.height;
+      displayedWidth = rect.height * canvasAspect;
+      offsetX = (rect.width - displayedWidth) / 2;
+    } else {
+      displayedWidth = rect.width;
+      displayedHeight = rect.width / canvasAspect;
+      offsetY = (rect.height - displayedHeight) / 2;
+    }
+    const cx = ((e.clientX - rect.left - offsetX) * 800) / displayedWidth;
+    const cy = ((e.clientY - rect.top - offsetY) * 560) / displayedHeight;
+    // click fuera del área visible (barras negras) -> ignorar
+    if (cx < 0 || cx > 800 || cy < 0 || cy > 560) return;
 
     if (state.currentScene === 'PLAZA') {
       if (state.profile?.gradeLevel === 'kinder') {
-        if (Math.hypot(cx - 400, cy - 490) < 70) {
+        // Click sobre todo el cartel (rect 126x50 centrado en 400,490)
+        if (cx >= 400 - 63 && cx <= 400 + 63 && cy >= 490 - 25 && cy <= 490 + 25) {
           if (!canEnter()) return;
           sound.playSelect();
           onSceneChange('MATERIA_MAP', { materia: KINDER_MATERIA.id });
@@ -141,7 +158,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       } else {
         for (const mat of MATERIAS) {
-          if (Math.hypot(cx - mat.portalX, cy - mat.portalY) < 70) {
+          // Todo el cartel marrón (126x50) es clickeable — círculo rojo de tu captura
+          if (cx >= mat.portalX - 63 && cx <= mat.portalX + 63 && cy >= mat.portalY - 25 && cy <= mat.portalY + 25) {
             if (!canEnter()) return;
             sound.playSelect();
             onSceneChange('MATERIA_MAP', { materia: mat.id });
@@ -361,7 +379,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // Enter one of the 7 Materia radial portals (or Kinder Portal)
       if (state.profile?.gradeLevel === 'kinder') {
         const distKinder = Math.hypot(p.x - 400, p.y - 490);
-        if (distKinder < 70) {
+        if (distKinder < 28) {
           sound.playSelect();
           onSceneChange('MATERIA_MAP', { materia: KINDER_MATERIA.id });
           return;
@@ -369,7 +387,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       } else {
         for (const mat of MATERIAS) {
           const dist = Math.hypot(p.x - mat.portalX, p.y - mat.portalY);
-          if (dist < 60) {
+          if (dist < 28) {
             sound.playSelect();
             onSceneChange('MATERIA_MAP', { materia: mat.id });
             return;
@@ -615,14 +633,14 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             promptText = '🛒 Presioná [A] para hablar con el Mercader';
           } else if (state.profile?.gradeLevel === 'kinder') {
             const dist = Math.hypot(nextX - 400, nextY - 490);
-            if (dist < 70) {
-              promptText = '🎈 Presioná [A] para entrar a Aventuras de Kinder';
+            if (dist < 28) {
+              promptText = '🎈 Parate sobre el cartel para entrar a Kinder • [A] o click';
             }
           } else {
             for (const mat of MATERIAS) {
               const dist = Math.hypot(nextX - mat.portalX, nextY - mat.portalY);
-              if (dist < 60) {
-                promptText = `▶ Presioná [A] para entrar a Ciudad ${mat.shortName}`;
+              if (dist < 28) {
+                promptText = `▶ Parate sobre el cartel de ${mat.shortName} • [A] o click`;
                 break;
               }
             }
@@ -669,16 +687,16 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             walkKey = 'plaza:house';
             walkAction = () => { if (canEnter()) { sound.playDoor(); onSceneChange('HOUSE'); } };
           } else if (state.profile?.gradeLevel === 'kinder') {
-            if (Math.hypot(nextX - 400, nextY - 490) < 50) {
+            if (Math.hypot(nextX - 400, nextY - 490) < 22) {
               walkKey = 'plaza:kinder';
               walkAction = () => { if (canEnter()) { sound.playSelect(); onSceneChange('MATERIA_MAP', { materia: KINDER_MATERIA.id }); } };
             }
           } else {
             for (const mat of MATERIAS) {
-              if (Math.hypot(nextX - mat.portalX, nextY - mat.portalY) < 45) {
+              if (Math.hypot(nextX - mat.portalX, nextY - mat.portalY) < 22) {
                 walkKey = `plaza:mat:${mat.id}`;
                 walkAction = () => { if (canEnter()) { sound.playSelect(); onSceneChange('MATERIA_MAP', { materia: mat.id }); } };
-                promptText = `▶ Caminá al portal o clickeá para entrar a ${mat.shortName} • [A]`;
+                promptText = `▶ Parate sobre el cartel de ${mat.shortName} • [A] o click`;
                 break;
               }
             }
@@ -688,14 +706,16 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           const maxUnlocked = (state.currentMateria && state.profile.unlockedCities[state.currentMateria]) || 1;
           for (let idx = 0; idx < citiesX.length; idx++) {
             const cx = citiesX[idx];
-            if (Math.abs(nextX - cx) < 38 && Math.abs(nextY - 238) < 48) {
+            // Solo puerta (círculo rojo de la captura) — no el sendero
+            const doorY = 188; // 126+76-14 centro de puerta
+            if (Math.abs(nextX - cx) < 16 && Math.abs(nextY - doorY) < 16) {
               const cityNum = idx + 1;
               if (cityNum <= maxUnlocked) {
                 walkKey = `materia:city:${cityNum}`;
                 const cn = cityNum;
                 walkAction = () => { if (canEnter()) { sound.playSelect(); onSceneChange('CITY_MAP', { city: cn }); } };
                 const bInfo = BIMESTRES_INFO[idx];
-                promptText = `🏛️ Entrá caminando o clickeá para ${bInfo.name} • [A]`;
+                promptText = `🏛️ Parate sobre la puerta para entrar a ${bInfo.name} • [A] o click`;
               }
               break;
             }
@@ -704,7 +724,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           const row1X = [135, 285, 435, 585];
           for (let i = 0; i < 4; i++) {
             const hx = row1X[i];
-            if (Math.abs(nextX - (hx + 39)) < 28 && Math.abs(nextY - 150) < 36) {
+            const doorX = hx + 39;
+            const doorY = 142; // street1Y(190)-48 centro puerta
+            if (Math.abs(nextX - doorX) < 14 && Math.abs(nextY - doorY) < 14) {
               walkKey = `city:house:${i + 1}`;
               const w = i + 1;
               walkAction = () => {
@@ -712,14 +734,16 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
                 onOpenNotebook(state.currentMateria || 'matematicas', state.currentCity, w);
                 setPlayer((prev) => ({ ...prev, y: prev.y + 18 }));
               };
-              promptText = `🏡 Semana ${w}: entrá caminando o clickeá • [A]`;
+              promptText = `🏡 Semana ${w}: parate sobre la puerta • [A] o click`;
               break;
             }
           }
           if (!walkKey) {
             for (let i = 0; i < 4; i++) {
               const hx = row1X[i];
-              if (Math.abs(nextX - (hx + 39)) < 28 && Math.abs(nextY - 370) < 36) {
+              const doorX = hx + 39;
+              const doorY = 362; // street2Y(410)-48
+              if (Math.abs(nextX - doorX) < 14 && Math.abs(nextY - doorY) < 14) {
                 walkKey = `city:house:${i + 5}`;
                 const w = i + 5;
                 walkAction = () => {
@@ -727,7 +751,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
                   onOpenNotebook(state.currentMateria || 'matematicas', state.currentCity, w);
                   setPlayer((prev) => ({ ...prev, y: prev.y + 18 }));
                 };
-                promptText = `🏡 Semana ${w}: entrá caminando o clickeá • [A]`;
+                promptText = `🏡 Semana ${w}: parate sobre la puerta • [A] o click`;
                 break;
               }
             }
