@@ -523,10 +523,10 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
     );
   }
 
-  // --- 2. AUTHENTICATED PARENT DASHBOARD ---
+  // --- 2. AUTHENTICATED PARENT DASHBOARD — PANTALLA COMPLETA para trabajar cómodo ---
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 animate-fade-in select-none">
-      <div className="relative w-full max-w-5xl max-h-[92vh] flex flex-col bg-slate-900 border-2 border-amber-500/80 rounded-3xl shadow-[0_12px_50px_rgba(0,0,0,0.85)] text-slate-100 overflow-hidden font-sans">
+    <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col animate-fade-in select-none">
+      <div className="relative w-full h-full flex flex-col bg-slate-900 text-slate-100 overflow-hidden font-sans">
         {/* Top Header */}
         <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-4 px-6 border-b border-amber-500/40 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -1560,6 +1560,7 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
           {/* ========================================================================= */}
           {/* TAB 5: PUNTOS & BAREMOS PEDAGÓGICOS */}
           {/* ========================================================================= */}
+          {activeTab === 'scoring' && (
             <form onSubmit={handleSaveScoring} className="space-y-4">
               <div className="bg-teal-950/40 border border-teal-500/40 rounded-2xl p-4">
                 <div className="flex items-center justify-between">
@@ -1642,6 +1643,7 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
                 </button>
               </div>
             </form>
+          )}
 
           {/* ========================================================================= */}
           {/* TAB 6: CARGA MASIVA (.TXT) E IMPORTACIÓN ESTRUCTURADA */}

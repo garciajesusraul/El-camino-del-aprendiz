@@ -67,7 +67,8 @@ export function getDefaultState(): AppState {
     soundEnabled: true,
     soundVolume: 80,
     musicEnabled: true,
-    musicVolume: 50,
+    musicVolume: 70,
+    musicMode: 'procedural',
     season: 'auto',
     degradationRatePerDay: 10,
     parentPin: '2026',
@@ -107,7 +108,8 @@ export function loadAppState(): AppState {
         soundEnabled: true,
         soundVolume: 80,
         musicEnabled: true,
-        musicVolume: 50,
+        musicVolume: 70,
+        musicMode: 'procedural',
         season: 'auto',
         degradationRatePerDay: 10,
         parentPin: '2026',
@@ -117,8 +119,9 @@ export function loadAppState(): AppState {
     } else {
       if (!parsed.settings.parentPin) parsed.settings.parentPin = '2026';
       if (parsed.settings.soundVolume === undefined) parsed.settings.soundVolume = 80;
-      if (parsed.settings.musicVolume === undefined) parsed.settings.musicVolume = 50;
+      if (parsed.settings.musicVolume === undefined) parsed.settings.musicVolume = 70;
       if (parsed.settings.musicEnabled === undefined) parsed.settings.musicEnabled = true;
+      if ((parsed.settings as any).musicMode === undefined) (parsed.settings as any).musicMode = 'procedural';
       if (!parsed.settings.scoring) parsed.settings.scoring = DEFAULT_SCORING_CONFIG;
     }
 
@@ -370,7 +373,7 @@ export function updateSoundVolume(
   const clampedMusic =
     musicVolume !== undefined
       ? Math.max(0, Math.min(100, Math.round(musicVolume)))
-      : (state.settings.musicVolume ?? 50);
+      : (state.settings.musicVolume ?? 70);
 
   const newState: AppState = {
     ...state,
@@ -381,6 +384,15 @@ export function updateSoundVolume(
       soundEnabled: sfxEnabled !== undefined ? sfxEnabled : state.settings.soundEnabled,
       musicEnabled: musicEnabled !== undefined ? musicEnabled : state.settings.musicEnabled,
     },
+  };
+  saveAppState(newState);
+  return newState;
+}
+
+export function updateMusicMode(state: AppState, mode: 'procedural' | 'midi'): AppState {
+  const newState: AppState = {
+    ...state,
+    settings: { ...state.settings, musicMode: mode },
   };
   saveAppState(newState);
   return newState;

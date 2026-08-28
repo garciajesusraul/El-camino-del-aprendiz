@@ -109,6 +109,7 @@ export interface GameSettings {
   soundVolume: number; // 0 to 100 (Efectos SFX)
   musicEnabled: boolean;
   musicVolume: number; // 0 to 100 (Música de fondo BGM)
+  musicMode: 'procedural' | 'midi'; // computadora vs MIDI
   season: 'auto' | 'verano' | 'otono' | 'invierno' | 'primavera';
   degradationRatePerDay: number; // percentage loss per day late (e.g. 10%)
   parentPin: string; // "2026"

@@ -69,6 +69,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControlsMenu, setShowControlsMenu] = useState(false);
   const [controlsPosition, setControlsPosition] = useState<'right' | 'left'>('right');
+  const [audioBlocked, setAudioBlocked] = useState(false);
 
   // Keys ref to avoid re-render lag
   const keysRef = useRef<{ [key: string]: boolean }>({});
@@ -85,6 +86,22 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  // Detecta si el audio está bloqueado por el navegador (muestra botón grande)
+  useEffect(() => {
+    const check = () => {
+      try {
+        const blocked = sound.isMusicEnabled() && sound.getMusicVolume() > 0 && !sound.getIsBgmPlaying();
+        setAudioBlocked(blocked);
+      } catch {}
+    };
+    check();
+    const id = window.setInterval(check, 900);
+    const onFirstInteraction = () => sound.resumeAfterInteraction();
+    window.addEventListener('click', onFirstInteraction, { once: true });
+    window.addEventListener('keydown', onFirstInteraction, { once: true });
+    return () => { window.clearInterval(id); window.removeEventListener('click', onFirstInteraction); window.removeEventListener('keydown', onFirstInteraction); };
   }, []);
 
   const toggleFullscreen = () => {
@@ -872,6 +889,16 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           className="w-full h-full object-contain block select-none max-w-full max-h-full cursor-pointer"
           style={{ imageRendering: 'pixelated' }}
         />
+
+        {/* Botón grande para desbloquear audio bloqueado por el navegador (donde tocar) */}
+        {audioBlocked && (
+          <button
+            onClick={() => { sound.resumeAfterInteraction(); setAudioBlocked(false); sound.playSelect(); }}
+            className="absolute top-16 left-1/2 -translate-x-1/2 z-40 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-900 font-black px-6 py-3 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.6)] border-2 border-amber-700 animate-bounce flex items-center gap-2 cursor-pointer"
+          >
+            <Volume2 className="w-5 h-5" /> 🔊 Toca aquí para activar música (70%)
+          </button>
+        )}
 
         {/* --- CLASSIC RPG PARCHMENT SCROLL DIALOGUE BOX (FONT.PNG / RETRO RPG STYLE) --- */}
         {activeDialogue && (
