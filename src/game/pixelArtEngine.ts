@@ -724,6 +724,317 @@ export class PixelArtRenderer {
     }
   }
 
+  // --- ENGLISH TOWN: escena exclusiva GBA HD (solo materia ingles) ---
+  private renderEnglishTownMateriaMap(ctx: CanvasRenderingContext2D, width: number, height: number, unlockedCityMax: number, season: string) {
+    // 1. Suelo pasto vibrante texturizado (GBA)
+    this.renderGrassBackground(ctx, width, height, season);
+    // velo ambient por estación
+    let ambient = season === 'verano' ? 'rgba(255,230,160,0.10)' : season === 'otono' ? 'rgba(255,180,80,0.12)' : season === 'invierno' ? 'rgba(180,210,255,0.08)' : 'rgba(160,255,180,0.07)';
+    ctx.fillStyle = ambient; ctx.fillRect(0,0,width,height);
+
+    const pathY = 282;
+    // 2. Camino adoquines textura orgánica con letras grabadas
+    // Base tierra irregular
+    ctx.fillStyle = 'rgba(90,72,40,0.22)';
+    ctx.beginPath();
+    ctx.ellipse(width/2, pathY+18, width*0.48, 18, 0,0,Math.PI*2); ctx.fill();
+    // Adoquines
+    const cobbleW = 16, cobbleH = 12;
+    const cols = Math.ceil(width / cobbleW) + 1;
+    const rows = 3;
+    const words = ['HELLO','CAT','SUN','DOG','BOOK','STAR'];
+    const letters = ['A','B','C','D'];
+    for (let r=0;r<rows;r++){
+      for (let c=-1;c< cols;c++){
+        const x = c*cobbleW + (r%2? cobbleW/2:0) + (this.hash2(c*13+r*17, r*7)-0.5)*2;
+        const y = pathY - 14 + r*cobbleH + (this.hash2(c*7+r*11, c*3)-0.5)*1.5;
+        const isDark = (c+r)%2===0;
+        ctx.fillStyle = isDark ? '#c9b8a0' : '#e0d3b8';
+        ctx.beginPath(); ctx.roundRect(x, y, cobbleW-1.5, cobbleH-1.5, 2.5); ctx.fill();
+        ctx.strokeStyle = 'rgba(90,72,40,0.18)'; ctx.lineWidth=0.6; ctx.stroke();
+        // letras grabadas aleatorias (12% lleva letra/palabra)
+        const h = this.hash2(c*19+r*33, 99);
+        if (h < 0.06) {
+          ctx.fillStyle = 'rgba(90,65,30,0.55)';
+          ctx.font = 'bold 7px monospace';
+          ctx.textAlign='center';
+          const txt = h < 0.03 ? letters[Math.floor(this.hash2(c*5,r*9)*letters.length)%letters.length] : words[Math.floor(this.hash2(c*11,r*13)*words.length)%words.length].slice(0,3);
+          ctx.fillText(txt, x+cobbleW/2, y+cobbleH/2+2.5);
+          ctx.textAlign='start';
+        } else {
+          // desgaste sutil
+          ctx.fillStyle = 'rgba(255,255,255,0.28)';
+          ctx.fillRect(x+2, y+1.5, cobbleW-6, 0.8);
+        }
+      }
+    }
+    // Bordes orgánicos del camino
+    ctx.strokeStyle='rgba(95,72,32,0.22)'; ctx.lineWidth=1.1;
+    ctx.beginPath(); ctx.moveTo(-10, pathY-16); for(let x=0;x<width+10;x+=16){ ctx.lineTo(x, pathY-16+(this.hash2(x*0.6, pathY)-0.5)*4);} ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-10, pathY+20); for(let x=0;x<width+10;x+=16){ ctx.lineTo(x, pathY+20+(this.hash2(x*0.6+50, pathY)-0.5)*4);} ctx.stroke();
+    // Terraplén
+    ctx.fillStyle='#9c7a3c'; ctx.fillRect(0, pathY+18, width, 6);
+
+    // Portón Plaza
+    this.renderWoodenGate(ctx, 10, pathY-45, '◀ Volver a Plaza');
+
+    // Entidades para Y-sorting: edificios + árboles
+    type Entity = { y:number, draw:()=>void, shadow:()=>void };
+    const entities: Entity[] = [];
+    const citiesX = [180,370,560,720];
+    // Prepara edificios (y ~126)
+    BIMESTRES_INFO.forEach((bInfo, idx)=>{
+      const cx = citiesX[idx];
+      const isUnlocked = bInfo.id <= unlockedCityMax;
+      const y = 126;
+      entities.push({
+        y: y+76,
+        shadow: ()=>{
+          ctx.fillStyle='rgba(0,0,0,0.20)';
+          ctx.beginPath(); ctx.ellipse(cx, y+76+6, 46, 12,0,0,Math.PI*2); ctx.fill();
+        },
+        draw: ()=> this.renderEnglishHouse(ctx, cx, y, isUnlocked, idx+1)
+      });
+      // sendero corto a puerta
+      if (isUnlocked) {
+        ctx.fillStyle='rgba(0,0,0,0.10)';
+        ctx.beginPath(); ctx.ellipse(cx, 214, 24, 8,0,0,Math.PI*2); ctx.fill();
+      }
+    });
+    // Árboles / arbustos
+    const treePos = [[70,60],[720,70],[120,360],[680,360]];
+    treePos.forEach(([tx,ty])=>{
+      entities.push({
+        y: ty+38,
+        shadow: ()=>{
+          ctx.fillStyle='rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.ellipse(tx, ty+38, 22, 8,0,0,Math.PI*2); ctx.fill();
+        },
+        draw: ()=> this.renderTree(ctx, tx, ty, season)
+      });
+    });
+    // Ordena por y y dibuja sombras primero, luego entidades
+    entities.sort((a,b)=> a.y - b.y);
+    entities.forEach(e=> e.shadow());
+    entities.forEach(e=> e.draw());
+
+    // Decoración orgánica: flores, rocas, farolas amarillas (sin notas)
+    this.renderLantern(ctx, 95, pathY-16);
+    this.renderLantern(ctx, 285, pathY-16);
+    this.renderLantern(ctx, 475, pathY-16);
+    this.renderLantern(ctx, 665, pathY-16);
+    // Flores/rocas dispersas
+    for(let i=0;i<14;i++){
+      const fx = 40 + this.hash2(i*31, i*17)* (width-80);
+      const fy = 60 + this.hash2(i*73, i*29)* 120;
+      if (fy> 200 && fy < 260) continue; // evita camino
+      const kind = this.hash2(i*11,i*7);
+      if (kind < 0.5){
+        // flor pequeña
+        ctx.fillStyle = ['#fde68a','#f9a8d4','#93c5fd'][Math.floor(kind*3)%3];
+        ctx.beginPath(); ctx.arc(fx, fy, 2.2,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#fef08a'; ctx.beginPath(); ctx.arc(fx,fy,0.9,0,Math.PI*2); ctx.fill();
+      } else {
+        // roca
+        ctx.fillStyle='rgba(100,116,139,0.55)';
+        ctx.beginPath(); ctx.ellipse(fx,fy, 3+this.hash2(i*19,9)*2, 2,0,0,Math.PI*2); ctx.fill();
+      }
+    }
+
+    // Cartel superior "Welcome to English Town" con bandera UK
+    this.renderEnglishHeader(ctx, width/2, 30);
+
+    // Iluminación ambient global ya aplicada arriba + viñeteado suave
+    this.renderVignette(ctx, width, height);
+  }
+
+  private renderEnglishHeader(ctx: CanvasRenderingContext2D, x:number, y:number){
+    const w=260, h=28;
+    // fondo pill
+    ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.roundRect(x-w/2, y-h/2+3, w, h, 14); ctx.fill();
+    ctx.fillStyle='#0f172a'; ctx.beginPath(); ctx.roundRect(x-w/2, y-h/2, w, h, 14); ctx.fill();
+    ctx.strokeStyle='#f59e0b'; ctx.lineWidth=1.6; ctx.stroke();
+    // bandera UK simplificada 18x12
+    const fx = x - 98, fy = y - 6;
+    ctx.fillStyle='#1d4ed8'; ctx.fillRect(fx, fy, 18, 12);
+    ctx.strokeStyle='#ffffff'; ctx.lineWidth=1.8; ctx.strokeRect(fx, fy, 18, 12);
+    ctx.strokeStyle='#dc2626'; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx+18, fy+12); ctx.moveTo(fx+18, fy); ctx.lineTo(fx, fy+12); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(fx+9, fy); ctx.lineTo(fx+9, fy+12); ctx.moveTo(fx, fy+6); ctx.lineTo(fx+18, fy+6); ctx.stroke();
+    // texto
+    ctx.fillStyle='#fffbeb'; ctx.font='bold 13px system-ui, sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Welcome to English Town', x+10, y+4.5);
+    ctx.textAlign='start';
+  }
+
+  private renderEnglishHouse(ctx: CanvasRenderingContext2D, x:number, y:number, isUnlocked:boolean, idx:number){
+    const w=92, h=76, cx=x-w/2;
+    // Desaturación 60% si bloqueada
+    const desat = !isUnlocked;
+    const wallLight = desat ? '#cbd5e1' : '#faf6ee';
+    const wallStone = desat ? '#94a3b8' : '#e7dcc8';
+    const wood = desat ? '#6b7280' : '#8b5a2b';
+    const roof = desat ? '#64748b' : '#c0392b';
+    const roofDark = desat ? '#475569' : '#922b21';
+    ctx.save();
+    if (desat){ ctx.globalAlpha=0.72; }
+    // Muros piedra clara con entramado madera
+    ctx.fillStyle=wallLight; ctx.beginPath(); ctx.roundRect(cx, y+24, w, h-24, 4); ctx.fill();
+    // juntas piedra sutil
+    ctx.strokeStyle= desat ? 'rgba(100,116,139,0.22)' : 'rgba(180,160,130,0.22)';
+    ctx.lineWidth=0.7;
+    for(let by=y+32; by< y+h-4; by+=10){ ctx.beginPath(); ctx.moveTo(cx+4, by); ctx.lineTo(cx+w-4, by); ctx.stroke(); }
+    // entramado madera
+    ctx.fillStyle=wood; ctx.fillRect(cx, y+24, w, 4); ctx.fillRect(cx, y+h-18, w, 4);
+    ctx.fillRect(cx, y+24, 4, h-24); ctx.fillRect(cx+w-4, y+24, 4, h-24);
+    ctx.fillRect(cx+w/2-2, y+24, 4, h-24);
+    // Teja roja con relieve
+    ctx.fillStyle=roof; ctx.beginPath(); ctx.moveTo(cx-6, y+26); ctx.lineTo(x, y-16); ctx.lineTo(cx+w+6, y+26); ctx.fill();
+    ctx.fillStyle=roofDark; ctx.beginPath(); ctx.moveTo(cx-6, y+26); ctx.lineTo(x, y-16+6); ctx.lineTo(x-8, y+26); ctx.fill();
+    // tejas líneas
+    ctx.strokeStyle= desat ? 'rgba(0,0,0,0.18)' : 'rgba(100,20,10,0.18)';
+    ctx.lineWidth=0.8;
+    for(let ty=y-8; ty< y+24; ty+=6){ const t = (ty - (y-8))/(y+24-(y-8)); const lx = cx-4 + t*(x - (cx-4)); const rx = cx+w+4 - t*(cx+w+4 - x); ctx.beginPath(); ctx.moveTo(lx, ty); ctx.lineTo(rx, ty); ctx.stroke(); }
+    // Chimenea piedra clara
+    ctx.fillStyle= desat ? '#6b7280' : '#d5c4a8'; ctx.fillRect(x+22, y-8, 10, 20);
+    ctx.fillStyle= desat ? '#475569' : '#a08b6f'; ctx.fillRect(x+22, y-10, 10, 4);
+    // Ventanas blancas con cruz
+    const winY = y+36;
+    for(let wx of [cx+12, cx+w-26]){
+      ctx.fillStyle= desat ? '#e5e7eb' : '#ffffff'; ctx.fillRect(wx, winY, 14, 14);
+      ctx.fillStyle='#1e293b'; ctx.strokeStyle='#334155'; ctx.lineWidth=0.8; ctx.strokeRect(wx, winY, 14, 14);
+      ctx.fillStyle='#1e293b'; ctx.fillRect(wx+6, winY, 2, 14); ctx.fillRect(wx, winY+6, 14, 2);
+      if(!desat){
+        const glow = 0.45+ Math.sin(this.animTick*0.08 + x)*0.10;
+        ctx.fillStyle=`rgba(254,240,138,${glow})`; ctx.fillRect(wx+2, winY+2, 10, 10);
+      }
+    }
+    // Puerta arqueada azul marino con herraje dorado
+    ctx.fillStyle= desat ? '#334155' : '#1e3a5f'; ctx.beginPath(); ctx.roundRect(x-13, y+h-28, 26, 28, [10,10,0,0]); ctx.fill();
+    ctx.strokeStyle= desat ? '#64748b' : '#c9a86a'; ctx.lineWidth=1.4; ctx.stroke();
+    if(!desat){
+      ctx.fillStyle='#fbbf24'; ctx.beginPath(); ctx.arc(x+7, y+h-16, 2,0,Math.PI*2); ctx.fill();
+    } else {
+      ctx.fillStyle='#ef4444'; ctx.font='bold 10px sans-serif'; ctx.textAlign='center'; ctx.fillText('🔒', x, y+h-8); ctx.textAlign='start';
+    }
+    // Cabina telefónica roja británica cerca de entrada (solo ciudad 1 activa como muestra)
+    if(idx===1 && !desat){
+      const bx = cx -18, by = y+h-22;
+      ctx.fillStyle='rgba(0,0,0,0.22)'; ctx.beginPath(); ctx.ellipse(bx+7, by+16, 9, 4,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#dc2626'; ctx.fillRect(bx, by, 14, 16);
+      ctx.fillStyle='#7f1d1d'; ctx.fillRect(bx, by, 14, 2);
+      ctx.fillStyle='#fecaca'; ctx.fillRect(bx+2, by+3, 10, 8);
+      ctx.strokeStyle='#ffffff'; ctx.lineWidth=0.7; ctx.strokeRect(bx+2, by+3, 10, 8);
+      ctx.fillStyle='#ffffff'; ctx.font='bold 5px sans-serif'; ctx.textAlign='center'; ctx.fillText('PHONE', bx+7, by+8); ctx.textAlign='start';
+      // cúpula
+      ctx.fillStyle='#991b1b'; ctx.beginPath(); ctx.arc(bx+7, by, 7, Math.PI,0); ctx.fill();
+    }
+    // Placa nombre
+    ctx.fillStyle='rgba(0,0,0,0.38)'; ctx.beginPath(); ctx.roundRect(x-54, y+h+10, 108, 24, 7); ctx.fill();
+    ctx.fillStyle= desat ? '#1e293b' : '#0f172a'; ctx.beginPath(); ctx.roundRect(x-54, y+h+8, 108, 24, 7); ctx.fill();
+    ctx.strokeStyle= desat ? '#64748b' : '#f59e0b'; ctx.lineWidth=1.3; ctx.stroke();
+    const names = ['City One','City Two','City Three','City Four'];
+    const months = ['Feb - Apr','May - Jun','Jul - Sep','Oct - Nov'];
+    ctx.fillStyle= desat ? '#cbd5e1' : '#fde68a'; ctx.font='bold 11px system-ui, sans-serif'; ctx.textAlign='center';
+    ctx.fillText(names[idx-1]||`City ${idx}`, x, y+h+19);
+    ctx.fillStyle= desat ? '#94a3b8' : '#fde68a'; ctx.font='600 8px system-ui, sans-serif';
+    ctx.fillText(months[idx-1]||'', x, y+h+26); ctx.textAlign='start';
+    ctx.restore();
+  }
+
+  // --- PREMIUM THEMATIC TOWN para Historia/Lenguaje/Arte/Matemáticas (GBA HD, solo esas 4) ---
+  private renderPremiumThematicTown(ctx: CanvasRenderingContext2D, width:number, height:number, unlockedCityMax:number, season:string, materiaId:string){
+    const materia = MATERIAS.find(m=> m.id===materiaId) || MATERIAS[0];
+    // Suelo pasto vibrante GBA
+    this.renderGrassBackground(ctx, width, height, season);
+    let ambient = season==='verano' ? 'rgba(255,230,160,0.10)' : season==='otono' ? 'rgba(255,180,80,0.12)' : season==='invierno' ? 'rgba(180,210,255,0.08)' : 'rgba(160,255,180,0.07)';
+    ctx.fillStyle=ambient; ctx.fillRect(0,0,width,height);
+
+    const pathY=282;
+    // Camino adoquines con grabados temáticos
+    let letters:string[]=[], words:string[]=[];
+    if(materiaId==='matematicas'){ letters=['1','2','3','+','×','π']; words=['SUM','123','PI']; }
+    else if(materiaId==='lenguaje'){ letters=['A','B','C','E']; words=['HELLO','ABC','LEE']; }
+    else if(materiaId==='historia'){ letters=['I','V','X']; words=['PAZ','LEY','REY']; }
+    else if(materiaId==='luces'){ letters=['R','G','B']; words=['ART','LUZ','COL']; }
+    else { letters=['A','B']; words=['HI']; }
+    ctx.fillStyle='rgba(90,72,40,0.22)'; ctx.beginPath(); ctx.ellipse(width/2, pathY+18, width*0.48, 18,0,0,Math.PI*2); ctx.fill();
+    const cobbleW=16, cobbleH=12, cols=Math.ceil(width/cobbleW)+1, rows=3;
+    for(let r=0;r<rows;r++){
+      for(let c=-1;c<cols;c++){
+        const x=c*cobbleW + (r%2? cobbleW/2:0) + (this.hash2(c*13+r*17, r*7)-0.5)*2;
+        const y=pathY-14 + r*cobbleH + (this.hash2(c*7+r*11, c*3)-0.5)*1.5;
+        const isDark=(c+r)%2===0;
+        ctx.fillStyle=isDark ? '#c9b8a0' : '#e0d3b8';
+        ctx.beginPath(); ctx.roundRect(x, y, cobbleW-1.5, cobbleH-1.5, 2.5); ctx.fill();
+        ctx.strokeStyle='rgba(90,72,40,0.18)'; ctx.lineWidth=0.6; ctx.stroke();
+        const h=this.hash2(c*19+r*33, 99);
+        if(h<0.07){
+          ctx.fillStyle='rgba(90,65,30,0.55)'; ctx.font='bold 7px monospace'; ctx.textAlign='center';
+          const txt = h<0.035 ? letters[Math.floor(this.hash2(c*5,r*9)*letters.length)%letters.length] : words[Math.floor(this.hash2(c*11,r*13)*words.length)%words.length].slice(0,3);
+          ctx.fillText(txt, x+cobbleW/2, y+cobbleH/2+2.5); ctx.textAlign='start';
+        } else {
+          ctx.fillStyle='rgba(255,255,255,0.28)'; ctx.fillRect(x+2, y+1.5, cobbleW-6, 0.8);
+        }
+      }
+    }
+    ctx.strokeStyle='rgba(95,72,32,0.22)'; ctx.lineWidth=1.1;
+    ctx.beginPath(); ctx.moveTo(-10, pathY-16); for(let x=0;x<width+10;x+=16){ ctx.lineTo(x, pathY-16+(this.hash2(x*0.6, pathY)-0.5)*4);} ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-10, pathY+20); for(let x=0;x<width+10;x+=16){ ctx.lineTo(x, pathY+20+(this.hash2(x*0.6+50, pathY)-0.5)*4);} ctx.stroke();
+    ctx.fillStyle='#9c7a3c'; ctx.fillRect(0, pathY+18, width, 6);
+    this.renderWoodenGate(ctx, 10, pathY-45, '◀ Volver a Plaza');
+
+    // Y-sorting entidades: edificios + árboles
+    type Entity={ y:number, draw:()=>void, shadow:()=>void };
+    const entities:Entity[]=[];
+    const citiesX=[180,370,560,720];
+    BIMESTRES_INFO.forEach((bInfo, idx)=>{
+      const cx=citiesX[idx];
+      const isUnlocked=bInfo.id <= unlockedCityMax;
+      const y=126;
+      entities.push({
+        y: y+76,
+        shadow: ()=>{ ctx.fillStyle='rgba(0,0,0,0.20)'; ctx.beginPath(); ctx.ellipse(cx, y+76+6, 46, 12,0,0,Math.PI*2); ctx.fill(); },
+        draw: ()=> this.renderThemedCityBuilding(ctx, cx, y, bInfo.label, bInfo.name, bInfo.months, isUnlocked, isUnlocked, materiaId, idx+1, materia.color)
+      });
+      if(isUnlocked){
+        ctx.fillStyle='rgba(0,0,0,0.10)'; ctx.beginPath(); ctx.ellipse(cx, 214, 24, 8,0,0,Math.PI*2); ctx.fill();
+      }
+    });
+    const treePos=[[70,60],[720,70],[120,360],[680,360]];
+    treePos.forEach(([tx,ty])=>{
+      entities.push({
+        y: ty+38,
+        shadow: ()=>{ ctx.fillStyle='rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.ellipse(tx, ty+38, 22, 8,0,0,Math.PI*2); ctx.fill(); },
+        draw: ()=> this.renderTree(ctx, tx, ty, season)
+      });
+    });
+    entities.sort((a,b)=> a.y - b.y);
+    entities.forEach(e=> e.shadow());
+    entities.forEach(e=> e.draw());
+
+    this.renderLantern(ctx, 95, pathY-16);
+    this.renderLantern(ctx, 285, pathY-16);
+    this.renderLantern(ctx, 475, pathY-16);
+    this.renderLantern(ctx, 665, pathY-16);
+    for(let i=0;i<14;i++){
+      const fx=40 + this.hash2(i*31,i*17)*(width-80);
+      const fy=60 + this.hash2(i*73,i*29)*120;
+      if(fy>200 && fy<260) continue;
+      const kind=this.hash2(i*11,i*7);
+      if(kind<0.5){
+        ctx.fillStyle=['#fde68a','#f9a8d4','#93c5fd'][Math.floor(kind*3)%3];
+        ctx.beginPath(); ctx.arc(fx,fy,2.2,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#fef08a'; ctx.beginPath(); ctx.arc(fx,fy,0.9,0,Math.PI*2); ctx.fill();
+      } else {
+        ctx.fillStyle='rgba(100,116,139,0.55)';
+        ctx.beginPath(); ctx.ellipse(fx,fy,3+this.hash2(i*19,9)*2,2,0,0,Math.PI*2); ctx.fill();
+      }
+    }
+    // Header temático (no "Welcome" sino nombre materia, para diferenciar de Inglés)
+    this.renderMateriaHeaderPill(ctx, width/2, 30, materia.name, materia.color);
+    this.renderVignette(ctx, width, height);
+  }
+
   // Animated Birds flying across the sky with natural wing flapping
   private renderFlyingBirds(ctx: CanvasRenderingContext2D, width: number, height: number) {
     const time = this.animTick * 0.05;
@@ -923,6 +1234,14 @@ export class PixelArtRenderer {
     season: string
   ) {
     const materia = MATERIAS.find((m) => m.id === materiaId) || MATERIAS[0];
+    if (materiaId === 'ingles') {
+      this.renderEnglishTownMateriaMap(ctx, width, height, unlockedCityMax, season);
+      return;
+    }
+    if (['matematicas','lenguaje','historia','luces'].includes(materiaId)) {
+      this.renderPremiumThematicTown(ctx, width, height, unlockedCityMax, season, materiaId);
+      return;
+    }
 
     // 1. Bioma temático como base — para Sonidos usamos pradera lush (como referencia) + piano como avenida, no fondo negro
     if (materiaId === 'matematicas') {
@@ -1300,23 +1619,15 @@ export class PixelArtRenderer {
     ctx.fillText('🎹', 730, 400);
   }
 
-  // 7. Inglés: London brick pavers, red phone booth, Big Ben lantern & English hedges
+  // 7. Inglés: English Town — pradera amigable vibrante (GBA HD, sin ladrillo oscuro)
   private renderInglesBiome(ctx: CanvasRenderingContext2D, width: number, height: number) {
-    ctx.fillStyle = '#1e1b4b';
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.fillStyle = '#312e81';
-    for (let y = 0; y < height; y += 32) {
-      for (let x = 0; x < width; x += 32) {
-        if ((x / 32 + y / 32) % 2 === 0) ctx.fillRect(x, y, 32, 32);
-      }
-    }
-
-    // Red Telephone Booth & Big Ben clock pillars
-    this.renderRedPhoneBooth(ctx, 75, 75);
-    this.renderRedPhoneBooth(ctx, 275, 70);
-    this.renderRedPhoneBooth(ctx, 465, 70);
-    this.renderRedPhoneBooth(ctx, 655, 75);
+    // Base pasto vibrante GBA con variaciones (reusa helper orgánico pero más luminoso)
+    this.renderGrassBackground(ctx, width, height, 'primavera');
+    // Suaviza con luz cálida
+    const g = ctx.createRadialGradient(width*0.5, height*0.35, 80, width*0.5, height*0.35, width*0.7);
+    g.addColorStop(0, 'rgba(255,255,255,0.06)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(0,0,width,height);
   }
 
   // Themed City Building Renderer (Unique per subject)
