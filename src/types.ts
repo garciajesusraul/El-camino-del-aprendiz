@@ -126,6 +126,7 @@ export interface ScoringConfig {
   bimesterSubjectBonus: number; // Por completar un bimestre de una materia: 300 pts
 }
 
+export type AppTheme = 'dark' | 'light' | 'semi';
 export interface GameSettings {
   soundEnabled: boolean;
   soundVolume: number; // 0 to 100 (Efectos SFX)
@@ -137,6 +138,7 @@ export interface GameSettings {
   parentPin: string; // "2026"
   autoApproveInChildMode: boolean;
   scoring: ScoringConfig;
+  theme: AppTheme;
 }
 
 export interface AppState {

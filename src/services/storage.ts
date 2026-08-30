@@ -74,6 +74,7 @@ export function getDefaultState(): AppState {
     parentPin: '2026',
     autoApproveInChildMode: false,
     scoring: DEFAULT_SCORING_CONFIG,
+    theme: 'dark',
   };
 
   return {
@@ -117,6 +118,7 @@ export function loadAppState(): AppState {
         parentPin: '2026',
         autoApproveInChildMode: false,
         scoring: DEFAULT_SCORING_CONFIG,
+        theme: 'dark',
       };
     } else {
       if (!parsed.settings.parentPin) parsed.settings.parentPin = '2026';
@@ -125,6 +127,7 @@ export function loadAppState(): AppState {
       if (parsed.settings.musicEnabled === undefined) parsed.settings.musicEnabled = true;
       if ((parsed.settings as any).musicMode === undefined) (parsed.settings as any).musicMode = 'procedural';
       if (!parsed.settings.scoring) parsed.settings.scoring = DEFAULT_SCORING_CONFIG;
+      if ((parsed.settings as any).theme === undefined) (parsed.settings as any).theme = 'dark';
     }
 
     // Migration for multi-profile support
@@ -395,6 +398,12 @@ export function updateScoringConfig(state: AppState, scoring: Partial<ScoringCon
       scoring: newScoring,
     },
   };
+  saveAppState(newState);
+  return newState;
+}
+
+export function updateTheme(state: AppState, theme: 'dark' | 'light' | 'semi'): AppState {
+  const newState: AppState = { ...state, settings: { ...state.settings, theme } };
   saveAppState(newState);
   return newState;
 }

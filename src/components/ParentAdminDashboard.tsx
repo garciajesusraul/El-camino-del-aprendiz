@@ -87,6 +87,7 @@ interface ParentAdminDashboardProps {
     }
   ) => void;
   onDeleteTask?: (taskId: string) => void;
+  onUpdateTheme?: (theme: 'dark' | 'light' | 'semi') => void;
 }
 
 export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
@@ -118,6 +119,7 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
   onUpdateStoreItems,
   onUpdateUserPoints,
   onDeleteTask,
+  onUpdateTheme,
 }) => {
   // PIN Gate State
   const expectedPin = state.settings?.parentPin || '2026';
@@ -527,24 +529,23 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col animate-fade-in select-none">
       <div className="relative w-full h-full flex flex-col bg-slate-900 text-slate-100 overflow-hidden font-sans">
-        {/* Top Header compacto */}
-        <div className="flex justify-center pt-3 pb-2 shrink-0">
-          <div className="flex items-center gap-2 bg-slate-950 border border-amber-500/40 rounded-full px-5 py-1.5 shadow">
-            <Settings className="w-4 h-4 text-amber-400" />
-            <h3 className="text-xs font-black tracking-widest text-white">PANEL DE OPCIONES</h3>
-            <button
-              onClick={onClose}
-              className="ml-2 w-6 h-6 rounded-full bg-slate-800 hover:bg-rose-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-
         {/* Layout vertical: sidebar + contenido con scroll interno */}
         <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
           {/* Sidebar vertical — todos los menús visibles, sin scroll horizontal */}
           <aside className="w-full md:w-64 shrink-0 bg-slate-950 border-b md:border-b-0 md:border-r border-slate-800 flex md:flex-col gap-1.5 p-3 overflow-x-auto md:overflow-y-auto md:overflow-x-hidden">
+            {/* Header solo sobre sidebar, bien a la izquierda y fuera del cuerpo */}
+            <div className="flex items-center justify-between bg-slate-900 border border-amber-500/30 rounded-xl px-3 py-2 mb-2 shrink-0">
+              <div className="flex items-center gap-1.5">
+                <Settings className="w-3.5 h-3.5 text-amber-400" />
+                <h3 className="text-[11px] font-black tracking-widest text-white">PANEL DE OPCIONES</h3>
+              </div>
+              <button
+                onClick={onClose}
+                className="w-6 h-6 rounded-lg bg-slate-800 hover:bg-rose-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
             <div className="hidden md:block px-2 pb-2 pt-1">
               <p className="text-[10px] font-black tracking-widest text-slate-500 uppercase">Menú de padres</p>
               <p className="text-xs text-slate-400">Elegí una sección — todo está a la vista, desplazamiento vertical</p>
@@ -1819,6 +1820,33 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
           {/* ========================================================================= */}
           {activeTab === 'config' && (
             <div className="space-y-4">
+              {/* Selector de Tema */}
+              <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-3">
+                <h4 className="text-sm font-black text-slate-200 flex items-center gap-2">
+                  <span className="w-4 h-4 rounded-full bg-gradient-to-br from-slate-700 via-amber-700 to-slate-900 border border-slate-600" />
+                  <span>Tema de la App</span>
+                  <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-slate-700 text-slate-300 border border-slate-600">{state.settings.theme === 'light' ? 'Claro' : state.settings.theme === 'semi' ? 'Semi' : 'Oscuro'}</span>
+                </h4>
+                <p className="text-xs text-slate-400">Elegí cómo se ve la app. Se guarda para este dispositivo.</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'dark', label: 'Oscuro', desc: 'Negro profundo', bg: 'bg-slate-950 border-slate-700' },
+                    { id: 'semi', label: 'Semi', desc: 'Marrón/azul oscuro suave', bg: 'bg-[#1c1917] border-amber-900/40' },
+                    { id: 'light', label: 'Claro', desc: 'Fondo claro', bg: 'bg-stone-100 border-stone-300' },
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => onUpdateTheme && onUpdateTheme(t.id as any)}
+                      className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer ${state.settings.theme === t.id ? 'border-amber-400 ring-1 ring-amber-400/40 ' + t.bg : 'border-transparent ' + t.bg + ' opacity-80 hover:opacity-100'}`}
+                    >
+                      <div className={`text-xs font-black ${t.id === 'light' ? 'text-slate-800' : 'text-white'}`}>{t.label}</div>
+                      <div className={`text-[10px] ${t.id === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>{t.desc}</div>
+                      {state.settings.theme === t.id && <div className="text-[10px] font-bold text-emerald-400 mt-1">✓ Activo</div>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Actualizar Contraseña Parental */}
               <div className="bg-slate-800/80 border border-amber-500/40 rounded-2xl p-4 space-y-3">
                 <h4 className="text-sm font-black text-amber-300 flex items-center gap-2">

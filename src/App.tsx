@@ -20,6 +20,7 @@ import {
   deleteUserProfile,
   updateScoringConfig,
   updateSoundVolume,
+  updateTheme,
   updateUserPoints,
   canRedeemReward,
   redeemReward,
@@ -277,6 +278,10 @@ export default function App() {
     setState((prev) => deleteUserProfile(prev, userId));
   };
 
+  const handleUpdateTheme = (theme: 'dark' | 'light' | 'semi') => {
+    setState((prev) => updateTheme(prev, theme));
+  };
+
   const handleUpdateParentPin = (newPin: string) => {
     setState((prev) => {
       const nextState: AppState = {
@@ -371,8 +376,10 @@ export default function App() {
     });
   };
 
+  const themeBg = state.settings.theme === 'light' ? 'bg-stone-100 text-slate-900' : state.settings.theme === 'semi' ? 'bg-[#1c1917] text-stone-100' : 'bg-slate-950 text-slate-100';
+  const themeRoot = state.settings.theme === 'light' ? 'light' : state.settings.theme === 'semi' ? 'semi' : 'dark';
   return (
-    <div className="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center select-none font-sans overflow-hidden relative p-0 m-0">
+    <div className={`h-screen w-screen flex flex-col items-center justify-center select-none font-sans overflow-hidden relative p-0 m-0 ${themeBg}`} data-theme={themeRoot}>
       {/* Top Dynamic HUD with Menu, User Display and Sound Volume */}
       <HeaderHUD
         state={state}
@@ -430,6 +437,7 @@ export default function App() {
           onUpdateScoringConfig={handleUpdateScoringConfig}
           onUpdateParentPin={handleUpdateParentPin}
           onUpdateVolume={handleUpdateVolume}
+          onUpdateTheme={handleUpdateTheme}
           onOpenNotebook={handleOpenNotebook}
           onOpenStore={() => setShowStore(true)}
           onAddTask={handleAddTask}
