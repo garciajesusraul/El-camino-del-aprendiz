@@ -168,37 +168,7 @@ export const DailyPointsModal: React.FC<DailyPointsModalProps> = ({
             </div>
           </div>
 
-          {/* Progress / Motivation Banner */}
-          <div className="bg-gradient-to-r from-purple-950/60 to-indigo-950/60 border border-purple-500/40 rounded-2xl p-3 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-purple-600/30 text-purple-300 flex items-center justify-center shadow">
-                <Flame className="w-5 h-5 text-orange-400 animate-pulse" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-purple-200">
-                  {todayTasksCount > 0
-                    ? '¡Excelente dedicación hoy! Seguí sumando para tus recompensas.'
-                    : '¡Comenzá tus misiones de hoy para ganar puntos y avanzar tu viaje!'}
-                </p>
-                <p className="text-[10px] text-slate-400">
-                  Racha actual: <strong className="text-amber-300">{profile.currentStreak || 1} días consecutivos</strong>
-                </p>
-              </div>
-            </div>
 
-            {onOpenNotebook && (
-              <button
-                onClick={() => {
-                  onClose();
-                  onOpenNotebook();
-                }}
-                className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-1 shadow transition-transform active:scale-95 cursor-pointer shrink-0"
-              >
-                <span>Ver Libreta</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
 
           {/* List of Tasks Done Today */}
           <div className="space-y-2">
