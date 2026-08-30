@@ -186,6 +186,28 @@ export function loadAppState(): AppState {
       });
     }
 
+    // Migration: rebalance store costs y agregar nuevos premios diarios (helado semanal, piano, etc)
+    if (!parsed.storeItems || !Array.isArray(parsed.storeItems) || parsed.storeItems.length === 0) {
+      parsed.storeItems = INITIAL_STORE_ITEMS;
+    } else {
+      const existingById = new Map(parsed.storeItems.map((it: StoreItem) => [it.id, it]));
+      const merged: StoreItem[] = INITIAL_STORE_ITEMS.map((def) => {
+        const ex = existingById.get(def.id);
+        if (ex) {
+          // Mantener purchased pero actualizar costo/título/descripción a los nuevos balanceados
+          return { ...ex, cost: def.cost, costType: def.costType, title: def.title, icon: def.icon, description: def.description, type: def.type, itemKey: def.itemKey };
+        }
+        return def;
+      });
+      // Conservar premios custom creados por padres que no estén en INITIAL
+      for (const ex of parsed.storeItems) {
+        if (!INITIAL_STORE_ITEMS.find((d) => d.id === ex.id)) {
+          merged.push(ex);
+        }
+      }
+      parsed.storeItems = merged;
+    }
+
     return parsed;
   } catch (e) {
     console.warn('Error reading from localStorage, using default state:', e);

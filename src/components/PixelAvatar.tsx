@@ -5,6 +5,7 @@ interface PixelAvatarProps {
   size?: number;
   className?: string;
   hairColor?: string;
+  accessory?: 'none' | 'backpack' | 'glasses' | 'medal' | 'cape';
 }
 
 /**
@@ -16,6 +17,7 @@ export const PixelAvatar: React.FC<PixelAvatarProps> = ({
   size = 32,
   className = '',
   hairColor,
+  accessory = 'none',
 }) => {
   if (gender === 'boy') {
     // Exact Pixel Art representation of Prota with Black Hair
@@ -83,6 +85,34 @@ export const PixelAvatar: React.FC<PixelAvatarProps> = ({
         <rect x="7" y="18" width="10" height="3" fill={shirtColor} />
         <rect x="9" y="18" width="6" height="1" fill={shirtTrim} />
         <rect x="6" y="20" width="12" height="4" fill={shirtColor} />
+        {/* Accesorios Avatar */}
+        {accessory === 'glasses' && (
+          <>
+            <rect x="6" y="10" width="4" height="3" fill="none" stroke="#1e293b" strokeWidth={0.7} />
+            <rect x="14" y="10" width="4" height="3" fill="none" stroke="#1e293b" strokeWidth={0.7} />
+            <rect x="10" y="11" width="4" height="0.7" fill="#1e293b" />
+            <rect x="6" y="10.5" width="4" height="0.7" fill="rgba(255,255,255,0.5)" />
+            <rect x="14" y="10.5" width="4" height="0.7" fill="rgba(255,255,255,0.5)" />
+          </>
+        )}
+        {accessory === 'medal' && (
+          <>
+            <circle cx="12" cy="19" r="2.2" fill="#facc15" stroke="#a16207" strokeWidth={0.6} />
+            <text x="12" y="19.8" fontSize="2" textAnchor="middle" fill="#78350f">★</text>
+          </>
+        )}
+        {accessory === 'cape' && (
+          <>
+            <rect x="4" y="19" width="16" height="4" fill="#dc2626" />
+            <rect x="4" y="19" width="16" height="1" fill="#991b1b" />
+          </>
+        )}
+        {accessory === 'backpack' && (
+          <>
+            <rect x="8" y="19" width="8" height="5" fill="#eab308" stroke="#92400e" strokeWidth={0.5} />
+            <rect x="10" y="20" width="4" height="1" fill="#fde68a" />
+          </>
+        )}
       </svg>
     );
   }
@@ -138,6 +168,34 @@ export const PixelAvatar: React.FC<PixelAvatarProps> = ({
       {/* Pink Blouse Collar */}
       <rect x="7" y="18" width="10" height="4" fill="#f43f5e" />
       <rect x="11" y="18" width="2" height="2" fill="#be123c" />
+      {/* Accesorios Avatar */}
+      {accessory === 'glasses' && (
+        <>
+          <rect x="7" y="10.5" width="4" height="3" fill="none" stroke="#1e293b" strokeWidth={0.7} />
+          <rect x="13" y="10.5" width="4" height="3" fill="none" stroke="#1e293b" strokeWidth={0.7} />
+          <rect x="11" y="11.5" width="2" height="0.7" fill="#1e293b" />
+          <rect x="7" y="11" width="4" height="0.7" fill="rgba(255,255,255,0.5)" />
+          <rect x="13" y="11" width="4" height="0.7" fill="rgba(255,255,255,0.5)" />
+        </>
+      )}
+      {accessory === 'medal' && (
+        <>
+          <circle cx="12" cy="19" r="2.2" fill="#facc15" stroke="#a16207" strokeWidth={0.6} />
+          <text x="12" y="19.8" fontSize="2" textAnchor="middle" fill="#78350f">★</text>
+        </>
+      )}
+      {accessory === 'cape' && (
+        <>
+          <rect x="4" y="19" width="16" height="4" fill="#ec4899" />
+          <rect x="4" y="19" width="16" height="1" fill="#831843" />
+        </>
+      )}
+      {accessory === 'backpack' && (
+        <>
+          <rect x="8" y="19" width="8" height="5" fill="#ec4899" stroke="#9333ea" strokeWidth={0.5} />
+          <rect x="10" y="20" width="4" height="1" fill="#fde68a" />
+        </>
+      )}
     </svg>
   );
 };

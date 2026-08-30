@@ -209,9 +209,9 @@ export const INITIAL_HABITS: Omit<Task, 'id' | 'createdAt'>[] = [
 
 // Generador de tareas de muestra enriquecidas para las 7 materias x 4 bimestres x 8 semanas
 export function generateSeedTasks(userId: string = 'user_1'): Task[] {
-  // Libreta vac�a por defecto: el padre crea las tareas manualmente
+  // Libreta vac�a por defecto: el padre crea las tareas manualmente
   return [];
-  // C�digo anterior deshabilitado - no generar tareas inventadas
+  // C�digo anterior deshabilitado - no generar tareas inventadas
   const tasks: Task[] = [];
   let taskIdCounter = 1;
 
@@ -352,15 +352,16 @@ export function generateSeedTasks(userId: string = 'user_1'): Task[] {
 }
 
 export const INITIAL_STORE_ITEMS: StoreItem[] = [
-  // Premios Vida Real (Configurables por padres)
+  // Premios Vida Real — balanceados por puntajes semanales (30 pts = 1 tarea, 5 tareas/día = ~150/día)
+  // Premios semanales (1 por semana si hace todo bien y a tiempo)
   {
     id: 'reward-icecream',
     title: 'Salida por un Helado Artesanal',
     type: 'real_life',
-    costType: 'vida',
-    cost: 50,
+    costType: 'sabiduria',
+    cost: 320,
     icon: '🍦',
-    description: '¡Canjeá este cupón para ir juntos a disfrutar de tu helado favorito!',
+    description: '¡Premio semanal! Canjeá este cupón para ir juntos por tu helado favorito (1 por semana si completás todo a tiempo).',
     purchased: false,
   },
   {
@@ -368,9 +369,9 @@ export const INITIAL_STORE_ITEMS: StoreItem[] = [
     title: '1 Hora Extra de Videojuegos',
     type: 'real_life',
     costType: 'sabiduria',
-    cost: 60,
+    cost: 300,
     icon: '🎮',
-    description: 'Tiempo libre extra para jugar en la consola o tablet el fin de semana.',
+    description: 'Premio semanal: 1 hora extra el finde. Máximo 3h TV/semana por niño — con esfuerzo sostenido.',
     purchased: false,
   },
   {
@@ -378,9 +379,9 @@ export const INITIAL_STORE_ITEMS: StoreItem[] = [
     title: 'Elegir la Película Familiar + Pochoclos',
     type: 'real_life',
     costType: 'vida',
-    cost: 40,
+    cost: 180,
     icon: '🍿',
-    description: 'Vos elegís qué película vemos todos juntos en la noche de cine.',
+    description: 'Vos elegís la peli familiar. Costo medio — requiere par de días de buen desempeño.',
     purchased: false,
   },
   {
@@ -388,30 +389,81 @@ export const INITIAL_STORE_ITEMS: StoreItem[] = [
     title: 'Paseo en Bici o Tarde de Parque',
     type: 'real_life',
     costType: 'vida',
-    cost: 45,
+    cost: 200,
     icon: '🚲',
-    description: 'Una tarde especial al aire libre con juegos y merienda rica.',
+    description: 'Tarde al aire libre con merienda. Premio de medio esfuerzo semanal.',
     purchased: false,
   },
   {
     id: 'reward-dinner',
     title: 'Elegir el Menú de la Cena',
     type: 'real_life',
-    costType: 'sabiduria',
-    cost: 35,
+    costType: 'vida',
+    cost: 150,
     icon: '🍕',
-    description: 'Tu comida favorita preparada con amor para toda la casa.',
+    description: 'Tu comida favorita para toda la casa. Requiere constancia de 2-3 días.',
     purchased: false,
   },
-  // Accesorios de Avatar
+  // Premios diarios SIN dinero ni videojuegos — alcanzables con buen día (50-65 pts)
+  {
+    id: 'reward-play-parents',
+    title: '10 min jugando con Papá o Mamá',
+    type: 'real_life',
+    costType: 'vida',
+    cost: 55,
+    icon: '🧸',
+    description: '10 minutos de juego libre con papá o mamá, sin pantallas. Alcanzable con buen desempeño del día.',
+    purchased: false,
+  },
+  {
+    id: 'reward-piano',
+    title: '10 min con el Piano',
+    type: 'real_life',
+    costType: 'sabiduria',
+    cost: 50,
+    icon: '🎹',
+    description: '10 minutos extra para practicar piano con alegría. Sin tele.',
+    purchased: false,
+  },
+  {
+    id: 'reward-draw',
+    title: '10 min dibujando juntos',
+    type: 'real_life',
+    costType: 'vida',
+    cost: 60,
+    icon: '🎨',
+    description: '10 minutos de dibujo libre con mamá o papá. Recompensa diaria de esfuerzo.',
+    purchased: false,
+  },
+  {
+    id: 'reward-story',
+    title: 'Cuento leído por Papá/Mamá 10 min',
+    type: 'real_life',
+    costType: 'vida',
+    cost: 45,
+    icon: '📚',
+    description: 'Papá o mamá te lee tu cuento favorito 10 minutos. Fácil de ganar en el día.',
+    purchased: false,
+  },
+  {
+    id: 'reward-boardgame',
+    title: '15 min juego de mesa en familia',
+    type: 'real_life',
+    costType: 'vida',
+    cost: 65,
+    icon: '🎲',
+    description: 'Partida corta a tu juego de mesa favorito. Premio diario familiar.',
+    purchased: false,
+  },
+  // Accesorios de Avatar — se ganan con puntos (coins) y modifican skin real
   {
     id: 'avatar-backpack',
     title: 'Mochila de Explorador',
     type: 'avatar',
     costType: 'coins',
-    cost: 50,
+    cost: 70,
     icon: '🎒',
-    description: 'Equipa una linda mochila escolar dorada en tu avatar.',
+    description: 'Se ve en tu personaje en el juego. Equipa una mochila dorada.',
     purchased: false,
     itemKey: 'backpack',
   },
@@ -420,9 +472,9 @@ export const INITIAL_STORE_ITEMS: StoreItem[] = [
     title: 'Gafas de Sabio',
     type: 'avatar',
     costType: 'coins',
-    cost: 40,
+    cost: 60,
     icon: '👓',
-    description: 'Lentes inteligentes que destacan tu amor por el estudio.',
+    description: 'Se ve en tu personaje: lentes reales sobre el rostro.',
     purchased: false,
     itemKey: 'glasses',
   },
@@ -431,9 +483,9 @@ export const INITIAL_STORE_ITEMS: StoreItem[] = [
     title: 'Medalla de Campeón',
     type: 'avatar',
     costType: 'coins',
-    cost: 80,
+    cost: 120,
     icon: '🥇',
-    description: 'Insignia brillante de honor al esfuerzo y constancia.',
+    description: 'Se ve en el pecho: medalla dorada brillante.',
     purchased: false,
     itemKey: 'medal',
   },
@@ -442,9 +494,9 @@ export const INITIAL_STORE_ITEMS: StoreItem[] = [
     title: 'Capa de Héroe del Conocimiento',
     type: 'avatar',
     costType: 'coins',
-    cost: 120,
+    cost: 150,
     icon: '🦸',
-    description: 'Capa ondeante roja que te acompaña en tus aventuras.',
+    description: 'Se ve flameando detrás: capa roja de héroe.',
     purchased: false,
     itemKey: 'cape',
   },

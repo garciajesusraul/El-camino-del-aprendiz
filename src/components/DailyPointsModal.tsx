@@ -98,6 +98,7 @@ export const DailyPointsModal: React.FC<DailyPointsModalProps> = ({
               <PixelAvatar
                 gender={profile.gender || 'boy'}
                 hairColor={profile.avatar?.hairColor}
+                accessory={profile.avatar?.accessory}
                 size={38}
               />
             </div>

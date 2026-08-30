@@ -569,7 +569,7 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
               { id: 'notebook', label: 'Libreta de Misiones & Tareas', icon: BookOpen, active: 'bg-blue-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'store', label: 'Tienda de Premios & Avatar', icon: ShoppingBag, active: 'bg-amber-500 text-slate-950 shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'approvals', label: `Aprobaciones (${submittedTasks.length})`, icon: CheckCircle2, active: 'bg-emerald-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
-              { id: 'scoring', label: 'Puntos & Baremos', icon: Award, active: 'bg-teal-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
+              { id: 'scoring', label: 'Puntaje', icon: Award, active: 'bg-teal-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'import', label: 'Carga Masiva (.TXT)', icon: UploadCloud, active: 'bg-indigo-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'cities', label: 'Desbloquear Ciudades', icon: Unlock, active: 'bg-cyan-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'config', label: 'Ajustes & PIN', icon: Settings, active: 'bg-slate-700 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
@@ -875,7 +875,7 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
                           <div className="flex items-start justify-between">
                             <div className="flex items-center gap-3">
                               <div className="w-12 h-12 rounded-2xl bg-purple-900/90 border border-purple-400/50 flex items-center justify-center overflow-hidden shadow p-1">
-                                <PixelAvatar gender={prof.gender || 'boy'} hairColor={prof.avatar?.hairColor} size={36} />
+                                <PixelAvatar gender={prof.gender || 'boy'} hairColor={prof.avatar?.hairColor} accessory={prof.avatar?.accessory} size={36} />
                               </div>
                               <div>
                                 <div className="flex items-center gap-2">
@@ -1294,8 +1294,11 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
                     { key: 'medal', name: 'Medalla de Honor', icon: '🎖️' },
                     { key: 'cape', name: 'Capa Legendaria', icon: '🦸' },
                   ].map((item) => {
+                    const costs: Record<string, number> = { backpack: 70, glasses: 60, medal: 120, cape: 150 };
+                    const cost = costs[item.key] ?? 60;
                     const isUnlocked = state.profile.inventory?.includes(item.key);
                     const isEquipped = state.profile.avatar?.accessory === item.key;
+                    const hasEnough = (state.profile.coins ?? 0) >= cost;
 
                     return (
                       <div
@@ -1333,20 +1336,26 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
                           ) : (
                             <button
                               onClick={() => {
-                                if (onPurchaseItem) {
+                                if (onPurchaseItem && hasEnough) {
                                   onPurchaseItem({
                                     id: `unlock_${item.key}`,
                                     title: item.name,
-                                    cost: 0,
+                                    cost: cost,
                                     costType: 'coins',
                                     type: 'avatar',
                                     itemKey: item.key,
                                   });
                                 }
                               }}
-                              className="w-full py-1 text-[11px] font-bold bg-amber-600 hover:bg-amber-500 text-slate-950 rounded-lg cursor-pointer"
+                              disabled={!hasEnough}
+                              className={`w-full py-1 text-[11px] font-bold rounded-lg cursor-pointer ${
+                                hasEnough
+                                  ? 'bg-amber-600 hover:bg-amber-500 text-slate-950'
+                                  : 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                              }`}
+                              title={hasEnough ? `Desbloquear por ${cost} 🪙` : `Necesitás ${cost} 🪙 (tenés ${state.profile.coins})`}
                             >
-                              Desbloquear
+                              {hasEnough ? `Desbloquear (${cost} 🪙)` : `Faltan ${cost - (state.profile.coins ?? 0)} 🪙`}
                             </button>
                           )}
                         </div>
@@ -1558,7 +1567,7 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
           )}
 
           {/* ========================================================================= */}
-          {/* TAB 5: PUNTOS & BAREMOS PEDAGÓGICOS */}
+          {/* TAB 5: PUNTAJE */}
           {/* ========================================================================= */}
           {activeTab === 'scoring' && (
             <form onSubmit={handleSaveScoring} className="space-y-4">
@@ -1567,7 +1576,7 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
                   <div className="flex items-center gap-2">
                     <Award className="w-5 h-5 text-teal-400" />
                     <h4 className="text-sm font-black text-teal-200">
-                      Configuración de Puntajes y Baremos
+                      Configuración de Puntaje
                     </h4>
                   </div>
                   <button
@@ -1632,14 +1641,14 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
               <div className="flex items-center justify-between pt-2">
                 {scoringSaved && (
                   <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
-                    <Check className="w-4 h-4" /> ¡Baremos y puntajes guardados correctamente!
+                    <Check className="w-4 h-4" /> ¡Puntaje guardado correctamente!
                   </span>
                 )}
                 <button
                   type="submit"
                   className="px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-black text-xs rounded-xl shadow ml-auto cursor-pointer"
                 >
-                  Guardar Baremos
+                  Guardar Puntaje
                 </button>
               </div>
             </form>

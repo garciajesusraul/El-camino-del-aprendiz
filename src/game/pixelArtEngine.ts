@@ -2356,7 +2356,7 @@ export class PixelArtRenderer {
       }
     }
 
-    // 5. Backpack Accessory
+    // 5. Accesorios: Mochila y Capa (se dibujan detrás/delante según facing)
     if (profile.avatar.accessory === 'backpack') {
       ctx.fillStyle = isGirl ? '#ec4899' : '#eab308';
       if (facing === 'up') {
@@ -2365,6 +2365,10 @@ export class PixelArtRenderer {
         ctx.fill();
         ctx.fillStyle = isGirl ? '#db2777' : '#ca8a04';
         ctx.fillRect(px + 9, py + 19 + walkBob, pWidth - 18, 3);
+      } else if (facing === 'down') {
+        // Mochila visible a los lados cuando mira abajo
+        ctx.fillRect(px + 6, py + 16 + walkBob, 3, 9);
+        ctx.fillRect(px + pWidth - 9, py + 16 + walkBob, 3, 9);
       } else if (facing === 'left') {
         ctx.beginPath();
         ctx.roundRect(px + pWidth - 8, py + 15 + walkBob, 6, 11, 2);
@@ -2372,6 +2376,47 @@ export class PixelArtRenderer {
       } else if (facing === 'right') {
         ctx.beginPath();
         ctx.roundRect(px + 2, py + 15 + walkBob, 6, 11, 2);
+        ctx.fill();
+      }
+    }
+    if (profile.avatar.accessory === 'cape') {
+      const capeColor = isGirl ? '#ec4899' : '#dc2626';
+      const capeShadow = isGirl ? '#831843' : '#991b1b';
+      ctx.fillStyle = capeShadow;
+      if (facing === 'up') {
+        ctx.beginPath();
+        ctx.roundRect(px + 6, py + 16 + walkBob, pWidth - 12, 14, 3);
+        ctx.fill();
+        ctx.fillStyle = capeColor;
+        ctx.beginPath();
+        ctx.roundRect(px + 7, py + 17 + walkBob, pWidth - 14, 12, 3);
+        ctx.fill();
+      } else if (facing === 'down') {
+        // Capa flameando detrás
+        ctx.fillStyle = capeShadow;
+        ctx.fillRect(px + 4, py + 18 + walkBob, pWidth - 8, 10);
+        ctx.fillStyle = capeColor;
+        ctx.fillRect(px + 5, py + 19 + walkBob, pWidth - 10, 8);
+        // Brillo
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.fillRect(px + 7, py + 19 + walkBob, pWidth - 14, 2);
+      } else if (facing === 'left') {
+        ctx.fillStyle = capeShadow;
+        ctx.beginPath();
+        ctx.roundRect(px + 3, py + 15 + walkBob, 9, 13, 2);
+        ctx.fill();
+        ctx.fillStyle = capeColor;
+        ctx.beginPath();
+        ctx.roundRect(px + 4, py + 16 + walkBob, 7, 11, 2);
+        ctx.fill();
+      } else if (facing === 'right') {
+        ctx.fillStyle = capeShadow;
+        ctx.beginPath();
+        ctx.roundRect(px + pWidth - 12, py + 15 + walkBob, 9, 13, 2);
+        ctx.fill();
+        ctx.fillStyle = capeColor;
+        ctx.beginPath();
+        ctx.roundRect(px + pWidth - 11, py + 16 + walkBob, 7, 11, 2);
         ctx.fill();
       }
     }
@@ -2536,6 +2581,51 @@ export class PixelArtRenderer {
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(px + 23, py + 9 + walkBob, 1.5, 1.5);
       }
+    }
+
+    // 8. Accesorios faciales: Gafas y Medalla (sobre rostro/pecho, visibles en juego)
+    if (profile.avatar.accessory === 'glasses') {
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1.2;
+      ctx.fillStyle = 'rgba(255,255,255,0.22)';
+      if (facing === 'down') {
+        ctx.strokeRect(px + 7, py + 8 + walkBob, 6, 4);
+        ctx.strokeRect(px + 19, py + 8 + walkBob, 6, 4);
+        ctx.beginPath();
+        ctx.moveTo(px + 13, py + 10 + walkBob);
+        ctx.lineTo(px + 19, py + 10 + walkBob);
+        ctx.stroke();
+        ctx.fillRect(px + 8, py + 8.5 + walkBob, 4, 0.8);
+        ctx.fillRect(px + 20, py + 8.5 + walkBob, 4, 0.8);
+      } else if (facing === 'left') {
+        ctx.strokeRect(px + 5, py + 8 + walkBob, 6, 4);
+        ctx.fillRect(px + 6, py + 8.5 + walkBob, 4, 0.8);
+      } else if (facing === 'right') {
+        ctx.strokeRect(px + 21, py + 8 + walkBob, 6, 4);
+        ctx.fillRect(px + 22, py + 8.5 + walkBob, 4, 0.8);
+      } else if (facing === 'up') {
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(px + 8, py + 6 + walkBob, 16, 1.5);
+      }
+    }
+    if (profile.avatar.accessory === 'medal') {
+      ctx.fillStyle = '#facc15';
+      ctx.strokeStyle = '#a16207';
+      ctx.lineWidth = 1;
+      const medalX = px + pWidth / 2;
+      const medalY = py + 22 + walkBob;
+      ctx.beginPath();
+      ctx.arc(medalX, medalY, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#78350f';
+      ctx.font = 'bold 4px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('★', medalX, medalY + 1.5);
+      ctx.textAlign = 'start';
+      ctx.fillStyle = isGirl ? '#ec4899' : '#2563eb';
+      ctx.fillRect(medalX - 3, medalY - 6, 2, 4);
+      ctx.fillRect(medalX + 1, medalY - 6, 2, 4);
     }
   }
 // --- RENDER PARTICLES OVERLAY ---

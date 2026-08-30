@@ -284,7 +284,7 @@ export const HeaderHUD: React.FC<HeaderHUDProps> = ({
           title={`Estudiante: ${profile.name} - Click para abrir opciones`}
         >
           <div className="w-8 h-8 rounded-xl bg-purple-900/80 border border-purple-400/50 flex items-center justify-center overflow-hidden shadow-inner p-0.5">
-            <PixelAvatar gender={profile.gender || 'boy'} hairColor={profile.avatar?.hairColor} size={28} />
+            <PixelAvatar gender={profile.gender || 'boy'} hairColor={profile.avatar?.hairColor} accessory={profile.avatar?.accessory} size={28} />
           </div>
           <span className="text-xs sm:text-sm font-black text-slate-100 group-hover:text-amber-200 transition-colors pr-1">
             {profile.name}
