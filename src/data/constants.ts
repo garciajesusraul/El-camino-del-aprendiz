@@ -209,6 +209,9 @@ export const INITIAL_HABITS: Omit<Task, 'id' | 'createdAt'>[] = [
 
 // Generador de tareas de muestra enriquecidas para las 7 materias x 4 bimestres x 8 semanas
 export function generateSeedTasks(userId: string = 'user_1'): Task[] {
+  // Libreta vacía por defecto: el padre crea las tareas manualmente
+  return [];
+  // Código anterior deshabilitado - no generar tareas inventadas
   const tasks: Task[] = [];
   let taskIdCounter = 1;
 
