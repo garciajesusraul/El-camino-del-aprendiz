@@ -81,6 +81,9 @@ export interface ChildProfile {
   inventory: string[];
 }
 
+export type RedemptionPeriod = 'unlimited' | 'per_week' | 'per_month';
+export type AvatarDuration = 'permanent' | 'limited_days';
+
 export interface StoreItem {
   id: string;
   title: string;
@@ -91,6 +94,25 @@ export interface StoreItem {
   description: string;
   purchased: boolean;
   itemKey?: string;
+  // Límites configurables desde Modo Padre
+  redeemLimit?: number; // ej 1
+  redeemPeriod?: RedemptionPeriod; // 'per_week' | 'per_month' | 'unlimited'
+  // Solo avatar: duración limitada
+  avatarDuration?: AvatarDuration; // 'permanent' | 'limited_days'
+  avatarDurationDays?: number; // ej 7, 14, 30
+}
+
+export interface RewardRedemption {
+  storeItemId: string;
+  userId: string;
+  redeemedAt: string; // ISO
+}
+
+export interface AvatarActive {
+  userId: string;
+  itemKey: string;
+  activatedAt: string;
+  expiresAt?: string; // si es limited_days
 }
 
 export interface ScoringConfig {
@@ -123,6 +145,8 @@ export interface AppState {
   activeUserId: string;
   tasks: Task[];
   storeItems: StoreItem[];
+  rewardRedemptions: RewardRedemption[];
+  avatarActives: AvatarActive[];
   settings: GameSettings;
   currentMateria: string | null;
   currentCity: number; // 1 to 4

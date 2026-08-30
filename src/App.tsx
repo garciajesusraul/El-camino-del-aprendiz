@@ -21,6 +21,8 @@ import {
   updateScoringConfig,
   updateSoundVolume,
   updateUserPoints,
+  canRedeemReward,
+  redeemReward,
 } from './services/storage';
 import { HeaderHUD } from './components/HeaderHUD';
 import { GameCanvas } from './components/GameCanvas';
@@ -292,10 +294,19 @@ export default function App() {
   // Store Handlers
   const handlePurchaseItem = (item: StoreItem) => {
     setState((prev) => {
+      const check = canRedeemReward(prev, item.id);
+      if (!check.allowed) {
+        alert(check.reason || 'Límite de canje alcanzado');
+        return prev;
+      }
       let newWisdom = prev.profile.wisdomPoints;
       let newLife = prev.profile.lifePoints;
       let newCoins = prev.profile.coins;
       const newInventory = [...prev.profile.inventory];
+
+      if (item.costType === 'sabiduria' && newWisdom < item.cost) { alert('Puntos de sabiduría insuficientes'); return prev; }
+      if (item.costType === 'vida' && newLife < item.cost) { alert('Puntos de vida insuficientes'); return prev; }
+      if (item.costType === 'coins' && newCoins < item.cost) { alert('Monedas insuficientes'); return prev; }
 
       if (item.costType === 'sabiduria') newWisdom -= item.cost;
       if (item.costType === 'vida') newLife -= item.cost;
@@ -305,7 +316,7 @@ export default function App() {
         newInventory.push(item.itemKey);
       }
 
-      const nextState: AppState = {
+      let nextState: AppState = {
         ...prev,
         profile: {
           ...prev.profile,
@@ -319,6 +330,12 @@ export default function App() {
           },
         },
       };
+      const redeemed = redeemReward(nextState, item.id);
+      if (!redeemed.ok) {
+        alert(redeemed.reason);
+        return prev;
+      }
+      nextState = redeemed.newState;
       saveAppState(nextState);
       return nextState;
     });
@@ -326,6 +343,19 @@ export default function App() {
 
   const handleEquipAccessory = (accessoryKey: 'none' | 'backpack' | 'glasses' | 'medal' | 'cape') => {
     setState((prev) => {
+      if (accessoryKey !== 'none') {
+        const active = (prev.avatarActives || []).find((a) => a.userId === prev.activeUserId && a.itemKey === accessoryKey);
+        const item = prev.storeItems.find((s) => s.itemKey === accessoryKey);
+        const isLimited = item && item.avatarDuration === 'limited_days';
+        if (isLimited && !active) {
+          alert('Este accesorio expiró. Debes canjearlo nuevamente.');
+          return prev;
+        }
+        if (!prev.profile.inventory.includes(accessoryKey)) {
+          alert('Primero debes desbloquear este accesorio en la tienda');
+          return prev;
+        }
+      }
       const nextState: AppState = {
         ...prev,
         profile: {

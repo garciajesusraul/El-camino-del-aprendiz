@@ -1,4 +1,4 @@
-import { AppState, ChildProfile, GameSettings, GenderType, GradeLevelType, ScoringConfig, StoreItem, Task, TaskStatus } from '../types';
+import { AppState, AvatarActive, ChildProfile, GameSettings, GenderType, GradeLevelType, ScoringConfig, StoreItem, Task, TaskStatus } from '../types';
 import { DEFAULT_SCORING_CONFIG, INITIAL_STORE_ITEMS, MATERIAS, generateSeedTasks } from '../data/constants';
 
 const STORAGE_KEY = 'ruta_aprendiz_game_state_v1';
@@ -82,6 +82,8 @@ export function getDefaultState(): AppState {
     activeUserId: 'user_1',
     tasks: generateSeedTasks('user_1'),
     storeItems: INITIAL_STORE_ITEMS,
+    rewardRedemptions: [],
+    avatarActives: [],
     settings: defaultSettings,
     currentMateria: null,
     currentCity: 1,
@@ -194,18 +196,31 @@ export function loadAppState(): AppState {
       const merged: StoreItem[] = INITIAL_STORE_ITEMS.map((def) => {
         const ex = existingById.get(def.id);
         if (ex) {
-          // Mantener purchased pero actualizar costo/título/descripción a los nuevos balanceados
-          return { ...ex, cost: def.cost, costType: def.costType, title: def.title, icon: def.icon, description: def.description, type: def.type, itemKey: def.itemKey };
+          return { ...ex, cost: def.cost, costType: def.costType, title: def.title, icon: def.icon, description: def.description, type: def.type, itemKey: def.itemKey, redeemLimit: def.redeemLimit, redeemPeriod: def.redeemPeriod, avatarDuration: def.avatarDuration, avatarDurationDays: def.avatarDurationDays };
         }
         return def;
       });
-      // Conservar premios custom creados por padres que no estén en INITIAL
       for (const ex of parsed.storeItems) {
         if (!INITIAL_STORE_ITEMS.find((d) => d.id === ex.id)) {
           merged.push(ex);
         }
       }
       parsed.storeItems = merged;
+    }
+
+    if (!parsed.rewardRedemptions) parsed.rewardRedemptions = [];
+    if (!parsed.avatarActives) parsed.avatarActives = [];
+    // Expirar avatares temporales vencidos
+    const nowIso = new Date().toISOString();
+    parsed.avatarActives = parsed.avatarActives.filter((a) => !a.expiresAt || a.expiresAt > nowIso);
+    // Si el accesorio equipado expiró, quitarlo
+    const activeForProfile = parsed.avatarActives.find((a) => a.userId === parsed.activeUserId && a.itemKey === parsed.profile.avatar.accessory);
+    if (parsed.profile.avatar.accessory !== 'none' && !activeForProfile) {
+      // Solo quitar si era temporal y expiró; si es permanente, active no existe pero se permite
+      const item = parsed.storeItems.find((s) => s.itemKey === parsed.profile.avatar.accessory);
+      if (item && item.avatarDuration === 'limited_days') {
+        parsed.profile.avatar.accessory = 'none';
+      }
     }
 
     return parsed;
@@ -734,4 +749,49 @@ export function updateUserPoints(
   };
   saveAppState(newState);
   return newState;
+}
+
+function isRedemptionAllowed(state: AppState, item: StoreItem, userId: string): { allowed: boolean; reason?: string } {
+  if (!item.redeemLimit || !item.redeemPeriod || item.redeemPeriod === 'unlimited' || item.redeemLimit <= 0) return { allowed: true };
+  const now = new Date();
+  const reds = (state.rewardRedemptions || []).filter((r) => r.storeItemId === item.id && r.userId === userId);
+  let count = 0;
+  if (item.redeemPeriod === 'per_week') {
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    count = reds.filter((r) => new Date(r.redeemedAt) >= weekStart).length;
+  } else if (item.redeemPeriod === 'per_month') {
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    count = reds.filter((r) => new Date(r.redeemedAt) >= monthStart).length;
+  }
+  if (count >= item.redeemLimit) {
+    return { allowed: false, reason: 'L�mite alcanzado: ' + item.redeemLimit + ' por ' + (item.redeemPeriod === 'per_week' ? 'semana' : 'mes') };
+  }
+  return { allowed: true };
+}
+
+export function canRedeemReward(state: AppState, itemId: string, userId?: string): { allowed: boolean; reason?: string } {
+  const uid = userId || state.activeUserId;
+  const item = state.storeItems.find((s) => s.id === itemId);
+  if (!item) return { allowed: false, reason: 'Premio no encontrado' };
+  return isRedemptionAllowed(state, item, uid);
+}
+
+export function redeemReward(state: AppState, itemId: string): { newState: AppState; ok: boolean; reason?: string } {
+  const item = state.storeItems.find((s) => s.id === itemId);
+  if (!item) return { newState: state, ok: false, reason: 'Premio no encontrado' };
+  const check = isRedemptionAllowed(state, item, state.activeUserId);
+  if (!check.allowed) return { newState: state, ok: false, reason: check.reason };
+  const redemption = { storeItemId: itemId, userId: state.activeUserId, redeemedAt: new Date().toISOString() };
+  let avatarActives: AvatarActive[] = state.avatarActives || [];
+  if (item.type === 'avatar' && item.itemKey) {
+    const isPermanent = !item.avatarDuration || item.avatarDuration === 'permanent';
+    const expiresAt = !isPermanent && item.avatarDurationDays ? new Date(Date.now() + item.avatarDurationDays * 86400000).toISOString() : undefined;
+    avatarActives = avatarActives.filter((a) => !(a.userId === state.activeUserId && a.itemKey === item.itemKey));
+    avatarActives.push({ userId: state.activeUserId, itemKey: item.itemKey, activatedAt: new Date().toISOString(), expiresAt });
+  }
+  const newState: AppState = { ...state, rewardRedemptions: [...(state.rewardRedemptions || []), redemption], avatarActives };
+  saveAppState(newState);
+  return { newState, ok: true };
 }
