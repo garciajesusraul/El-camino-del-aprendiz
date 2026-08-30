@@ -527,33 +527,18 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col animate-fade-in select-none">
       <div className="relative w-full h-full flex flex-col bg-slate-900 text-slate-100 overflow-hidden font-sans">
-        {/* Top Header */}
-        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-4 px-6 border-b border-amber-500/40 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-400/60 flex items-center justify-center text-amber-400 shadow-inner">
-              <Settings className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base sm:text-lg font-black text-white">
-                  Panel de Opciones y Modo Padre
-                </h3>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-500/40 text-emerald-300 font-bold">
-                  Acceso Parental Verificado ✓
-                </span>
-              </div>
-              <p className="text-xs text-slate-400">
-                Gestión exclusiva de libreta de tareas, tienda de premios, perfiles y configuración pedagógica.
-              </p>
-            </div>
+        {/* Top Header compacto */}
+        <div className="flex justify-center pt-3 pb-2 shrink-0">
+          <div className="flex items-center gap-2 bg-slate-950 border border-amber-500/40 rounded-full px-5 py-1.5 shadow">
+            <Settings className="w-4 h-4 text-amber-400" />
+            <h3 className="text-xs font-black tracking-widest text-white">PANEL DE OPCIONES</h3>
+            <button
+              onClick={onClose}
+              className="ml-2 w-6 h-6 rounded-full bg-slate-800 hover:bg-rose-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
-
-          <button
-            onClick={onClose}
-            className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-rose-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors border border-slate-700"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
         {/* Layout vertical: sidebar + contenido con scroll interno */}
@@ -588,12 +573,7 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
                 </button>
               );
             })}
-            <div className="hidden md:block mt-auto pt-3 border-t border-slate-800">
-              <div className="bg-slate-900 border border-amber-500/20 rounded-xl p-3">
-                <p className="text-xs font-bold text-amber-300 flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> Tip</p>
-                <p className="text-[11px] text-slate-400 leading-relaxed mt-1">Podés bajar con la rueda del ratón dentro del panel derecho. No hay carrusel oculto.</p>
-              </div>
-            </div>
+
           </aside>
 
           {/* Contenido — scroll vertical único */}
