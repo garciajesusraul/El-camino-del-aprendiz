@@ -1206,9 +1206,9 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
                               </button>
                             )}
 
-                            {onRejectTask && (
+                            {(onDeleteTask || onRejectTask) && (
                               <button
-                                onClick={() => onRejectTask(t.id)}
+                                onClick={() => { if (onDeleteTask) onDeleteTask(t.id); else onRejectTask(t.id); }}
                                 className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer"
                                 title="Eliminar tarea"
                               >
