@@ -1,5 +1,5 @@
-import { AppState, AvatarActive, ChildProfile, GameSettings, GenderType, GradeLevelType, ScoringConfig, StoreItem, Task, TaskStatus } from '../types';
-import { DEFAULT_SCORING_CONFIG, INITIAL_STORE_ITEMS, MATERIAS, generateSeedTasks } from '../data/constants';
+import { AppState, AvatarActive, ChildProfile, GameSettings, GenderType, GradeLevelType, ManualMedalOverride, MedalDefinition, ScoringConfig, StoreItem, Task, TaskStatus } from '../types';
+import { DEFAULT_SCORING_CONFIG, INITIAL_STORE_ITEMS, MATERIAS, generateSeedTasks, getDefaultMedalDefinitions } from '../data/constants';
 
 const STORAGE_KEY = 'ruta_aprendiz_game_state_v1';
 
@@ -85,6 +85,8 @@ export function getDefaultState(): AppState {
     storeItems: INITIAL_STORE_ITEMS,
     rewardRedemptions: [],
     avatarActives: [],
+    medalDefinitions: getDefaultMedalDefinitions(),
+    manualMedalOverrides: [],
     settings: defaultSettings,
     currentMateria: null,
     currentCity: 1,
@@ -189,6 +191,15 @@ export function loadAppState(): AppState {
         }
         return t;
       });
+    }
+    if (!parsed.medalDefinitions || !Array.isArray(parsed.medalDefinitions)) parsed.medalDefinitions = getDefaultMedalDefinitions();
+    if (!parsed.manualMedalOverrides) parsed.manualMedalOverrides = [];
+    // Migrar medallas nuevas que no existan
+    {
+      const existingIds = new Set(parsed.medalDefinitions.map((m) => m.id));
+      for (const def of getDefaultMedalDefinitions()) {
+        if (!existingIds.has(def.id)) parsed.medalDefinitions.push(def);
+      }
     }
 
     // Migration: rebalance store costs y agregar nuevos premios diarios (helado semanal, piano, etc)
@@ -803,4 +814,66 @@ export function redeemReward(state: AppState, itemId: string): { newState: AppSt
   const newState: AppState = { ...state, rewardRedemptions: [...(state.rewardRedemptions || []), redemption], avatarActives };
   saveAppState(newState);
   return { newState, ok: true };
+}
+
+// --- Medallas ---
+export function isMedalEarned(state: AppState, def: MedalDefinition, userId?: string): boolean {
+  const uid = userId || state.activeUserId;
+  const override = (state.manualMedalOverrides || []).find(o => o.userId===uid && o.medalId===def.id);
+  if (override) return override.active;
+  if (!def.enabled) return false;
+  const tasks = (state.tasks || []).filter(t => !t.userId || t.userId===uid);
+  const isApproved = (t: any) => t.status==='approved';
+  switch(def.criteriaType){
+    case 'manual': return false;
+    case 'daily_activities': {
+      const thr = def.criteriaParams?.threshold ?? 5;
+      const byDay = new Map<string, number>();
+      for(const t of tasks) if(isApproved(t) && t.approvedAt){ const d=t.approvedAt.slice(0,10); byDay.set(d,(byDay.get(d)||0)+1); }
+      for(const c of byDay.values()) if(c>=thr) return true;
+      return false;
+    }
+    case 'week_complete': {
+      const s=def.criteriaParams?.semana ?? 1; const b=def.criteriaParams?.bimestre ?? 1;
+      const weekTasks = tasks.filter(t=> t.bimestre===b && t.semana===s && (def.materiaId ? t.materiaId===def.materiaId : true));
+      if(weekTasks.length===0) return false;
+      return weekTasks.every(isApproved);
+    }
+    case 'week_complete_ontime': {
+      const s=def.criteriaParams?.semana ?? 1; const b=def.criteriaParams?.bimestre ?? 1;
+      const weekTasks = tasks.filter(t=> t.bimestre===b && t.semana===s && (def.materiaId ? t.materiaId===def.materiaId : true));
+      if(weekTasks.length===0) return false;
+      return weekTasks.every(t=> isApproved(t) && !t.daysOverdue);
+    }
+    case 'bimestre_complete': {
+      const b=def.criteriaParams?.bimestre ?? 1;
+      const bimTasks = tasks.filter(t=> t.bimestre===b && (def.materiaId ? t.materiaId===def.materiaId : true));
+      if(bimTasks.length===0) return false;
+      return bimTasks.every(isApproved);
+    }
+    default: return false;
+  }
+}
+
+export function toggleMedalEnabled(state: AppState, medalId: string): AppState {
+  const defs = state.medalDefinitions.map(d=> d.id===medalId ? {...d, enabled: !d.enabled} : d);
+  const ns={...state, medalDefinitions: defs}; saveAppState(ns); return ns;
+}
+
+export function upsertMedalDefinition(state: AppState, def: MedalDefinition): AppState {
+  const exists = state.medalDefinitions.find(d=> d.id===def.id);
+  const defs = exists ? state.medalDefinitions.map(d=> d.id===def.id ? def : d) : [...state.medalDefinitions, def];
+  const ns={...state, medalDefinitions: defs}; saveAppState(ns); return ns;
+}
+
+export function deleteMedalDefinition(state: AppState, medalId: string): AppState {
+  const defs = state.medalDefinitions.filter(d=> d.id!==medalId);
+  const overrides = (state.manualMedalOverrides||[]).filter(o=> o.medalId!==medalId);
+  const ns={...state, medalDefinitions: defs, manualMedalOverrides: overrides}; saveAppState(ns); return ns;
+}
+
+export function setManualMedalActive(state: AppState, medalId: string, userId: string, active: boolean): AppState {
+  const overrides = (state.manualMedalOverrides||[]).filter(o=> !(o.userId===userId && o.medalId===medalId));
+  overrides.push({ userId, medalId, active, updatedAt: new Date().toISOString() });
+  const ns={...state, manualMedalOverrides: overrides}; saveAppState(ns); return ns;
 }

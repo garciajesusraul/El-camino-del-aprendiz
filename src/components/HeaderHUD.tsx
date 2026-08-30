@@ -19,6 +19,7 @@ import {
   Music2,
   User,
   Star,
+  Trophy,
 } from 'lucide-react';
 
 interface HeaderHUDProps {
@@ -28,6 +29,7 @@ interface HeaderHUDProps {
   onOpenNotebook: () => void;
   onOpenAdmin: () => void;
   onOpenDailyPoints?: () => void;
+  onOpenMedalAlbum?: () => void;
   onUpdateVolume?: (sfxVolume: number, musicVolume?: number) => void;
 }
 
@@ -38,6 +40,7 @@ export const HeaderHUD: React.FC<HeaderHUDProps> = ({
   onOpenNotebook,
   onOpenAdmin,
   onOpenDailyPoints,
+  onOpenMedalAlbum,
   onUpdateVolume,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -211,6 +214,26 @@ export const HeaderHUD: React.FC<HeaderHUDProps> = ({
                         <span>⭐ Mis Puntos del Día</span>
                       </div>
                       <span className="text-[10px] bg-amber-900/60 text-amber-300 px-2 py-0.5 rounded font-mono border border-amber-700/50">Ver resumen</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Álbum de Medallas - visible para niño */}
+                {onOpenMedalAlbum && (
+                  <div className="mb-2">
+                    <button
+                      id="hud-btn-medal-album"
+                      onClick={() => {
+                        setIsOpen(false);
+                        onOpenMedalAlbum();
+                      }}
+                      className="w-full px-3 py-2.5 bg-gradient-to-r from-purple-950/80 to-indigo-950/80 hover:from-purple-900/80 hover:to-indigo-900/80 text-purple-200 rounded-xl text-xs font-bold flex items-center justify-between border border-purple-500/50 shadow transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Trophy className="w-4 h-4 text-amber-400" />
+                        <span>🏅 Álbum de Medallas</span>
+                      </div>
+                      <span className="text-[10px] bg-purple-900/60 text-purple-300 px-2 py-0.5 rounded font-mono border border-purple-700/50">Ver logros</span>
                     </button>
                   </div>
                 )}

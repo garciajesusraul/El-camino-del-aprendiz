@@ -1,4 +1,4 @@
-import { MateriaInfo, StoreItem, Task, ScoringConfig, ChildProfile } from '../types';
+import { MateriaInfo, StoreItem, Task, ScoringConfig, ChildProfile, MedalDefinition } from '../types';
 
 export const DEFAULT_SCORING_CONFIG: ScoringConfig = {
   simpleTaskPoints: 10,
@@ -524,3 +524,28 @@ export const INITIAL_STORE_ITEMS: StoreItem[] = [
     avatarDuration: 'permanent',
   },
 ];
+
+export function getDefaultMedalDefinitions(): MedalDefinition[] {
+  const defs: MedalDefinition[] = [];
+  // Generales
+  defs.push({ id: 'medal-daily-5', title: '¡5 en un Día!', description: 'Más de 5 actividades aprobadas en un mismo día', icon: '🌟', materiaId: null, criteriaType: 'daily_activities', criteriaParams: { threshold: 5 }, enabled: true });
+  defs.push({ id: 'medal-daily-8', title: 'Día Imparable', description: '8 actividades en un día', icon: '🔥', materiaId: null, criteriaType: 'daily_activities', criteriaParams: { threshold: 8 }, enabled: true });
+  // Por materia: semana 1 completa a tiempo / fuera de tiempo, bimestre completo
+  const semanas = [1, 2, 3, 4] as const;
+  const bimestres = [1, 2, 3, 4] as const;
+  for (const m of MATERIAS) {
+    // Semana 1 como hito destacado
+    defs.push({ id: `medal-${m.id}-s1-ontime`, title: `${m.shortName}: Semana 1 a tiempo`, description: `Semana 1 de ${m.name} completada sin atrasos`, icon: '🏅', materiaId: m.id, criteriaType: 'week_complete_ontime', criteriaParams: { semana: 1, bimestre: 1 }, enabled: true });
+    defs.push({ id: `medal-${m.id}-s1-any`, title: `${m.shortName}: Semana 1 completada`, description: `Semana 1 de ${m.name} completada (aunque fuera de tiempo)`, icon: '🎯', materiaId: m.id, criteriaType: 'week_complete', criteriaParams: { semana: 1, bimestre: 1 }, enabled: true });
+    for (const b of bimestres) {
+      defs.push({ id: `medal-${m.id}-b${b}`, title: `${m.shortName}: Bimestre ${b} completado`, description: `Todas las semanas del Bimestre ${b} de ${m.name} completadas`, icon: '🏆', materiaId: m.id, criteriaType: 'bimestre_complete', criteriaParams: { bimestre: b }, enabled: true });
+    }
+    // Medallas genéricas por materia para semanas 2-4 (compactas)
+    for (const s of semanas.slice(1)) {
+      defs.push({ id: `medal-${m.id}-s${s}`, title: `${m.shortName}: Semana ${s}`, description: `Semana ${s} completada`, icon: '🥇', materiaId: m.id, criteriaType: 'week_complete', criteriaParams: { semana: s, bimestre: 1 }, enabled: false });
+    }
+  }
+  // Kinder
+  defs.push({ id: 'medal-kinder-s1', title: 'Kinder: Semana 1', description: 'Semana 1 de Aventuras de Kinder', icon: '🎈', materiaId: KINDER_MATERIA.id, criteriaType: 'week_complete', criteriaParams: { semana: 1, bimestre: 1 }, enabled: true });
+  return defs;
+}

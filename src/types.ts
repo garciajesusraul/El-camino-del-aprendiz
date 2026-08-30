@@ -141,6 +141,26 @@ export interface GameSettings {
   theme: AppTheme;
 }
 
+export type MedalCriteriaType = 'daily_activities' | 'week_complete' | 'week_complete_ontime' | 'bimestre_complete' | 'manual';
+
+export interface MedalDefinition {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  materiaId: string | null; // null = general, o id materia
+  criteriaType: MedalCriteriaType;
+  criteriaParams?: { threshold?: number; semana?: number; bimestre?: number };
+  enabled: boolean;
+}
+
+export interface ManualMedalOverride {
+  userId: string;
+  medalId: string;
+  active: boolean; // fuerza activo/inactivo aunque auto diga lo contrario
+  updatedAt: string;
+}
+
 export interface AppState {
   profile: ChildProfile;
   profiles: ChildProfile[];
@@ -149,6 +169,8 @@ export interface AppState {
   storeItems: StoreItem[];
   rewardRedemptions: RewardRedemption[];
   avatarActives: AvatarActive[];
+  medalDefinitions: MedalDefinition[];
+  manualMedalOverrides: ManualMedalOverride[];
   settings: GameSettings;
   currentMateria: string | null;
   currentCity: number; // 1 to 4

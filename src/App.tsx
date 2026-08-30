@@ -13,6 +13,10 @@ import {
   unlockAllCities,
   parseAndImportTasksFromText,
   importTasksStructured,
+  toggleMedalEnabled,
+  upsertMedalDefinition,
+  deleteMedalDefinition,
+  setManualMedalActive,
   switchUserProfile,
   createUserProfile,
   updateUserProfile,
@@ -31,6 +35,7 @@ import { MissionNotebookModal } from './components/MissionNotebookModal';
 import { ParentAdminDashboard } from './components/ParentAdminDashboard';
 import { StoreModal } from './components/StoreModal';
 import { DailyPointsModal } from './components/DailyPointsModal';
+import { MedalAlbum } from './components/MedalAlbum';
 import { MATERIAS, KINDER_MATERIA } from './data/constants';
 import { sound } from './services/audio';
 
@@ -41,6 +46,7 @@ export default function App() {
   const [showNotebook, setShowNotebook] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showStore, setShowStore] = useState(false);
+  const [showMedalAlbum, setShowMedalAlbum] = useState(false);
   const [showDailyPoints, setShowDailyPoints] = useState(false);
 
   // Synchronize state changes to localStorage and audio volume
@@ -376,6 +382,11 @@ export default function App() {
     });
   };
 
+  const handleToggleMedalEnabled = (medalId: string) => setState((prev) => toggleMedalEnabled(prev, medalId));
+  const handleUpsertMedal = (def: any) => setState((prev) => upsertMedalDefinition(prev, def));
+  const handleDeleteMedal = (medalId: string) => setState((prev) => deleteMedalDefinition(prev, medalId));
+  const handleSetManualMedal = (medalId: string, userId: string, active: boolean) => setState((prev) => setManualMedalActive(prev, medalId, userId, active));
+
   const themeBg = state.settings.theme === 'light' ? 'bg-stone-100 text-slate-900' : state.settings.theme === 'semi' ? 'bg-[#1c1917] text-stone-100' : 'bg-slate-950 text-slate-100';
   const themeRoot = state.settings.theme === 'light' ? 'light' : state.settings.theme === 'semi' ? 'semi' : 'dark';
   return (
@@ -388,6 +399,7 @@ export default function App() {
         onOpenNotebook={() => handleOpenNotebook()}
         onOpenAdmin={() => setShowAdmin(true)}
         onOpenDailyPoints={() => setShowDailyPoints(true)}
+        onOpenMedalAlbum={() => setShowMedalAlbum(true)}
         onUpdateVolume={handleUpdateVolume}
       />
 
@@ -438,6 +450,10 @@ export default function App() {
           onUpdateParentPin={handleUpdateParentPin}
           onUpdateVolume={handleUpdateVolume}
           onUpdateTheme={handleUpdateTheme}
+          onToggleMedalEnabled={handleToggleMedalEnabled}
+          onUpsertMedal={handleUpsertMedal}
+          onDeleteMedal={handleDeleteMedal}
+          onSetManualMedal={handleSetManualMedal}
           onOpenNotebook={handleOpenNotebook}
           onOpenStore={() => setShowStore(true)}
           onAddTask={handleAddTask}
@@ -457,6 +473,21 @@ export default function App() {
           onClose={() => setShowDailyPoints(false)}
           onOpenNotebook={() => { setShowDailyPoints(false); handleOpenNotebook(); }}
         />
+      )}
+
+      {/* Álbum de Medallas - visible para niño */}
+      {showMedalAlbum && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 animate-fade-in select-none">
+          <div className="relative w-full max-w-3xl max-h-[92vh] flex flex-col bg-slate-900 border-2 border-amber-500/90 rounded-3xl shadow-[0_16px_60px_rgba(0,0,0,0.85)] overflow-hidden">
+            <div className="bg-gradient-to-r from-amber-950 via-slate-900 to-amber-950 p-4 border-b border-amber-500/40 flex items-center justify-between">
+              <h3 className="text-base font-black text-amber-300 flex items-center gap-2"><span className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-400 flex items-center justify-center">🏅</span> Álbum de Medallas</h3>
+              <button onClick={() => setShowMedalAlbum(false)} className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center border border-slate-700">✕</button>
+            </div>
+            <div className="p-4 overflow-y-auto">
+              <MedalAlbum state={state} />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Tienda y Personalizador Modal */}

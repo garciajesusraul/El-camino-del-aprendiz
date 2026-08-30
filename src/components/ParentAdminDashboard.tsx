@@ -3,6 +3,7 @@ import { AppState, ChildProfile, GenderType, GradeLevelType, ScoringConfig, Stor
 import { MATERIAS, BIMESTRES_INFO, KINDER_MATERIA, DEFAULT_SCORING_CONFIG } from '../data/constants';
 import { PixelAvatar } from './PixelAvatar';
 import { RewardEditorModal } from './RewardEditorModal';
+import { MedalAlbum } from './MedalAlbum';
 import {
   X,
   CheckCircle2,
@@ -23,6 +24,7 @@ import {
   Users,
   UserPlus,
   Trash2,
+  Trophy,
   Edit3,
   Check,
   KeyRound,
@@ -88,6 +90,10 @@ interface ParentAdminDashboardProps {
   ) => void;
   onDeleteTask?: (taskId: string) => void;
   onUpdateTheme?: (theme: 'dark' | 'light' | 'semi') => void;
+  onToggleMedalEnabled?: (id: string) => void;
+  onUpsertMedal?: (def: any) => void;
+  onDeleteMedal?: (id: string) => void;
+  onSetManualMedal?: (id: string, userId: string, active: boolean) => void;
 }
 
 export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
@@ -120,6 +126,10 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
   onUpdateUserPoints,
   onDeleteTask,
   onUpdateTheme,
+  onToggleMedalEnabled,
+  onUpsertMedal,
+  onDeleteMedal,
+  onSetManualMedal,
 }) => {
   // PIN Gate State
   const expectedPin = state.settings?.parentPin || '2026';
@@ -129,7 +139,7 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
 
   // Tabs
   const [activeTab, setActiveTab] = useState<
-    'users' | 'notebook' | 'store' | 'approvals' | 'scoring' | 'import' | 'cities' | 'config' | 'history'
+    'users' | 'notebook' | 'store' | 'approvals' | 'scoring' | 'import' | 'cities' | 'config' | 'history' | 'medals'
   >('users');
 
   // Reward editor state
@@ -556,6 +566,7 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
               { id: 'store', label: 'Tienda de Premios & Avatar', icon: ShoppingBag, active: 'bg-amber-500 text-slate-950 shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'approvals', label: `Aprobaciones (${submittedTasks.length})`, icon: CheckCircle2, active: 'bg-emerald-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'scoring', label: 'Puntaje', icon: Award, active: 'bg-teal-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
+              { id: 'medals', label: 'Álbum de Medallas', icon: Sparkles, active: 'bg-amber-600 text-slate-950 shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'import', label: 'Carga Masiva (.TXT)', icon: UploadCloud, active: 'bg-indigo-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'cities', label: 'Desbloquear Ciudades', icon: Unlock, active: 'bg-cyan-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'config', label: 'Ajustes & PIN', icon: Settings, active: 'bg-slate-700 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
@@ -1812,6 +1823,30 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* TAB: ÁLBUM DE MEDALLAS (configurable padre) */}
+          {/* ========================================================================= */}
+          {activeTab === 'medals' && (
+            <div className="space-y-4">
+              <div className="bg-amber-950/40 border border-amber-500/40 rounded-2xl p-4">
+                <h4 className="text-sm font-black text-amber-300 flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-amber-400" />
+                  Álbum de Medallas — Hitos por Materia
+                </h4>
+                <p className="text-xs text-slate-400 mt-1">Configurá medallas por materia. El niño las ve en su menú desplegable, divididas por materia, compactas. Se activan solas al lograr el hito (5 actividades/día, semana a tiempo/fuera de tiempo, bimestre). Podés crear, renombrar, activar/desactivar aunque ya esté ganada.</p>
+              </div>
+              <MedalAlbum
+                state={state}
+                editable
+                onToggleEnabled={onToggleMedalEnabled}
+                onToggleActive={onSetManualMedal}
+                onCreate={onUpsertMedal}
+                onUpdate={onUpsertMedal}
+                onDelete={onDeleteMedal}
+              />
             </div>
           )}
 
