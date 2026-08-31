@@ -76,7 +76,7 @@ export interface ChildProfile {
     outfitColor: string;
     pantsColor: string;
     skirtColor?: string;
-    accessory: 'none' | 'backpack' | 'glasses' | 'medal' | 'cape';
+    accessory: 'none' | 'backpack' | 'glasses' | 'medal' | 'cape' | 'lantern';
   };
   inventory: string[];
 }
@@ -100,6 +100,9 @@ export interface StoreItem {
   // Solo avatar: duración limitada
   avatarDuration?: AvatarDuration; // 'permanent' | 'limited_days'
   avatarDurationDays?: number; // ej 7, 14, 30
+  // Avatar por sexo y premio con racha
+  gender?: 'boy' | 'girl' | 'unisex';
+  requiredDays?: number; // 0 = sin límite, ej 7 días seguidos para habilitar canje
 }
 
 export interface RewardRedemption {
@@ -139,6 +142,8 @@ export interface GameSettings {
   autoApproveInChildMode: boolean;
   scoring: ScoringConfig;
   theme: AppTheme;
+  habitBoardWidth: number;
+  habitBoardHeight: number;
 }
 
 export type MedalCriteriaType = 'daily_activities' | 'week_complete' | 'week_complete_ontime' | 'bimestre_complete' | 'manual';
@@ -161,6 +166,33 @@ export interface ManualMedalOverride {
   updatedAt: string;
 }
 
+export type HabitGoalType = 'daily' | 'weekly' | 'monthly';
+
+export interface HabitDefinition {
+  id: string;
+  title: string;
+  description?: string;
+  icon: string;
+  points: number; // puntos vida por cumplir
+  goalType: HabitGoalType;
+  goalCount: number; // veces por periodo: daily 1, weekly 3, monthly 10 etc
+  enabled: boolean;
+}
+
+export interface HabitLog {
+  habitId: string;
+  userId: string;
+  date: string; // YYYY-MM-DD
+  completed: boolean;
+  createdAt: string;
+}
+
+export interface PlayStats {
+  totalMinutes: number;
+  activeMinutes: number;
+  lastSessionAt?: string;
+}
+
 export interface AppState {
   profile: ChildProfile;
   profiles: ChildProfile[];
@@ -171,6 +203,9 @@ export interface AppState {
   avatarActives: AvatarActive[];
   medalDefinitions: MedalDefinition[];
   manualMedalOverrides: ManualMedalOverride[];
+  habitDefinitions: HabitDefinition[];
+  habitLogs: HabitLog[];
+  playStats: PlayStats;
   settings: GameSettings;
   currentMateria: string | null;
   currentCity: number; // 1 to 4

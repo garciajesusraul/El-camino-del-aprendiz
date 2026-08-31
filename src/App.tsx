@@ -48,6 +48,28 @@ export default function App() {
   const [showStore, setShowStore] = useState(false);
   const [showMedalAlbum, setShowMedalAlbum] = useState(false);
   const [showDailyPoints, setShowDailyPoints] = useState(false);
+  const [sessionSec, setSessionSec] = useState(0);
+  const [activeSec, setActiveSec] = useState(0);
+  const sessionStartRef = React.useRef<number>(Date.now());
+
+  // Timer minimalista siempre visible 00:20
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setSessionSec(Math.floor((Date.now() - sessionStartRef.current) / 1000));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  // Persist stats cada minuto
+  useEffect(() => {
+    if (sessionSec > 0 && sessionSec % 60 === 0) {
+      setState((prev) => {
+        const ns = { ...prev, playStats: { ...prev.playStats, totalMinutes: (prev.playStats?.totalMinutes || 0) + 1, activeMinutes: (prev.playStats?.activeMinutes || 0) + Math.floor(activeSec / 60) } };
+        saveAppState(ns);
+        return ns;
+      });
+      setActiveSec(0);
+    }
+  }, [sessionSec, activeSec]);
 
   // Synchronize state changes to localStorage and audio volume
   useEffect(() => {
@@ -387,10 +409,16 @@ export default function App() {
   const handleDeleteMedal = (medalId: string) => setState((prev) => deleteMedalDefinition(prev, medalId));
   const handleSetManualMedal = (medalId: string, userId: string, active: boolean) => setState((prev) => setManualMedalActive(prev, medalId, userId, active));
 
+  const formatSession = (sec: number) => `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+
   const themeBg = state.settings.theme === 'light' ? 'bg-stone-100 text-slate-900' : state.settings.theme === 'semi' ? 'bg-[#1c1917] text-stone-100' : 'bg-slate-950 text-slate-100';
   const themeRoot = state.settings.theme === 'light' ? 'light' : state.settings.theme === 'semi' ? 'semi' : 'dark';
   return (
     <div className={`h-screen w-screen flex flex-col items-center justify-center select-none font-sans overflow-hidden relative p-0 m-0 ${themeBg}`} data-theme={themeRoot}>
+      {/* Timer minimalista siempre visible */}
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 z-40 bg-slate-950/85 border border-slate-700 rounded-full px-2.5 py-0.5 text-xs font-mono text-slate-200 backdrop-blur select-none pointer-events-none">
+        {formatSession(sessionSec)}
+      </div>
       {/* Top Dynamic HUD with Menu, User Display and Sound Volume */}
       <HeaderHUD
         state={state}

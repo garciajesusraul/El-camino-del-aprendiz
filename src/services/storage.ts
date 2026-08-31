@@ -1,5 +1,5 @@
-import { AppState, AvatarActive, ChildProfile, GameSettings, GenderType, GradeLevelType, ManualMedalOverride, MedalDefinition, ScoringConfig, StoreItem, Task, TaskStatus } from '../types';
-import { DEFAULT_SCORING_CONFIG, INITIAL_STORE_ITEMS, MATERIAS, generateSeedTasks, getDefaultMedalDefinitions } from '../data/constants';
+import { AppState, AvatarActive, ChildProfile, GameSettings, GenderType, GradeLevelType, HabitDefinition, HabitLog, ManualMedalOverride, MedalDefinition, ScoringConfig, StoreItem, Task, TaskStatus } from '../types';
+import { DEFAULT_SCORING_CONFIG, getDefaultHabitDefinitions, getDefaultMedalDefinitions, INITIAL_STORE_ITEMS, MATERIAS, generateSeedTasks } from '../data/constants';
 
 const STORAGE_KEY = 'ruta_aprendiz_game_state_v1';
 
@@ -75,6 +75,8 @@ export function getDefaultState(): AppState {
     autoApproveInChildMode: false,
     scoring: DEFAULT_SCORING_CONFIG,
     theme: 'dark',
+    habitBoardWidth: 140,
+    habitBoardHeight: 72,
   };
 
   return {
@@ -87,6 +89,9 @@ export function getDefaultState(): AppState {
     avatarActives: [],
     medalDefinitions: getDefaultMedalDefinitions(),
     manualMedalOverrides: [],
+    habitDefinitions: getDefaultHabitDefinitions(),
+    habitLogs: [],
+    playStats: { totalMinutes: 0, activeMinutes: 0 },
     settings: defaultSettings,
     currentMateria: null,
     currentCity: 1,
@@ -130,6 +135,8 @@ export function loadAppState(): AppState {
       if ((parsed.settings as any).musicMode === undefined) (parsed.settings as any).musicMode = 'procedural';
       if (!parsed.settings.scoring) parsed.settings.scoring = DEFAULT_SCORING_CONFIG;
       if ((parsed.settings as any).theme === undefined) (parsed.settings as any).theme = 'dark';
+      if ((parsed.settings as any).habitBoardWidth === undefined) (parsed.settings as any).habitBoardWidth = 140;
+      if ((parsed.settings as any).habitBoardHeight === undefined) (parsed.settings as any).habitBoardHeight = 72;
     }
 
     // Migration for multi-profile support
@@ -202,6 +209,15 @@ export function loadAppState(): AppState {
       }
     }
 
+    if (!parsed.habitDefinitions || !Array.isArray(parsed.habitDefinitions)) parsed.habitDefinitions = getDefaultHabitDefinitions();
+    if (!parsed.habitLogs) parsed.habitLogs = [];
+    {
+      const existingHIds = new Set(parsed.habitDefinitions.map((h) => h.id));
+      for (const def of getDefaultHabitDefinitions()) {
+        if (!existingHIds.has(def.id)) parsed.habitDefinitions.push(def);
+      }
+    }
+
     // Migration: rebalance store costs y agregar nuevos premios diarios (helado semanal, piano, etc)
     if (!parsed.storeItems || !Array.isArray(parsed.storeItems) || parsed.storeItems.length === 0) {
       parsed.storeItems = INITIAL_STORE_ITEMS;
@@ -210,7 +226,7 @@ export function loadAppState(): AppState {
       const merged: StoreItem[] = INITIAL_STORE_ITEMS.map((def) => {
         const ex = existingById.get(def.id);
         if (ex) {
-          return { ...ex, cost: def.cost, costType: def.costType, title: def.title, icon: def.icon, description: def.description, type: def.type, itemKey: def.itemKey, redeemLimit: def.redeemLimit, redeemPeriod: def.redeemPeriod, avatarDuration: def.avatarDuration, avatarDurationDays: def.avatarDurationDays };
+          return { ...ex, cost: def.cost, costType: def.costType, title: def.title, icon: def.icon, description: def.description, type: def.type, itemKey: def.itemKey, gender: (def as any).gender ?? (ex as any).gender, redeemLimit: def.redeemLimit, redeemPeriod: def.redeemPeriod, avatarDuration: def.avatarDuration, avatarDurationDays: def.avatarDurationDays, requiredDays: (def as any).requiredDays ?? (ex as any).requiredDays };
         }
         return def;
       });
@@ -224,6 +240,7 @@ export function loadAppState(): AppState {
 
     if (!parsed.rewardRedemptions) parsed.rewardRedemptions = [];
     if (!parsed.avatarActives) parsed.avatarActives = [];
+    if (!parsed.playStats) parsed.playStats = { totalMinutes: 0, activeMinutes: 0 };
     // Expirar avatares temporales vencidos
     const nowIso = new Date().toISOString();
     parsed.avatarActives = parsed.avatarActives.filter((a) => !a.expiresAt || a.expiresAt > nowIso);
@@ -415,6 +432,14 @@ export function updateScoringConfig(state: AppState, scoring: Partial<ScoringCon
 
 export function updateTheme(state: AppState, theme: 'dark' | 'light' | 'semi'): AppState {
   const newState: AppState = { ...state, settings: { ...state.settings, theme } };
+  saveAppState(newState);
+  return newState;
+}
+
+export function updateHabitBoardSize(state: AppState, width: number, height: number): AppState {
+  const w = Math.max(80, Math.min(260, Math.round(width)));
+  const h = Math.max(40, Math.min(160, Math.round(height)));
+  const newState: AppState = { ...state, settings: { ...state.settings, habitBoardWidth: w, habitBoardHeight: h } };
   saveAppState(newState);
   return newState;
 }
@@ -876,4 +901,68 @@ export function setManualMedalActive(state: AppState, medalId: string, userId: s
   const overrides = (state.manualMedalOverrides||[]).filter(o=> !(o.userId===userId && o.medalId===medalId));
   overrides.push({ userId, medalId, active, updatedAt: new Date().toISOString() });
   const ns={...state, manualMedalOverrides: overrides}; saveAppState(ns); return ns;
+}
+export function getHabitCompliance(state: AppState, habitId: string, userId?: string): number {
+  const uid = userId || state.activeUserId;
+  const logs = (state.habitLogs || []).filter(l => l.habitId===habitId && l.userId===uid);
+  if (logs.length===0) return 0;
+  const total = logs.length;
+  const completed = logs.filter(l=>l.completed).length;
+  return Math.round((completed/total)*100);
+}
+
+export function toggleHabitToday(state: AppState, habitId: string): AppState {
+  const uid = state.activeUserId;
+  const today = new Date().toISOString().slice(0,10);
+  const existingIdx = (state.habitLogs || []).findIndex(l => l.habitId===habitId && l.userId===uid && l.date===today);
+  let logs = [...(state.habitLogs||[])];
+  const habit = state.habitDefinitions.find(h=>h.id===habitId);
+  if (!habit) return state;
+  if (existingIdx>=0) {
+    logs[existingIdx] = { ...logs[existingIdx], completed: !logs[existingIdx].completed };
+  } else {
+    logs.push({ habitId, userId: uid, date: today, completed: true, createdAt: new Date().toISOString() });
+  }
+  // Award vida points if newly completed
+  const isNowCompleted = logs.find(l=> l.habitId===habitId && l.userId===uid && l.date===today)?.completed;
+  let profile = state.profile;
+  if (isNowCompleted) {
+    profile = { ...profile, lifePoints: profile.lifePoints + (habit.points || 5) };
+  } else {
+    profile = { ...profile, lifePoints: Math.max(0, profile.lifePoints - (habit.points || 5)) };
+  }
+  const newState: AppState = { ...state, habitLogs: logs, profile };
+  saveAppState(newState);
+  return newState;
+}
+
+export function upsertHabitDefinition(state: AppState, def: HabitDefinition): AppState {
+  const exists = state.habitDefinitions.find(d=>d.id===def.id);
+  const defs = exists ? state.habitDefinitions.map(d=> d.id===def.id ? def : d) : [...state.habitDefinitions, def];
+  const ns={...state, habitDefinitions: defs}; saveAppState(ns); return ns;
+}
+
+export function deleteHabitDefinition(state: AppState, habitId: string): AppState {
+  const defs = state.habitDefinitions.filter(d=> d.id!==habitId);
+  const logs = (state.habitLogs||[]).filter(l=> l.habitId!==habitId);
+  const ns={...state, habitDefinitions: defs, habitLogs: logs}; saveAppState(ns); return ns;
+}
+
+export function canRedeemHabitReward(state: AppState, item: StoreItem, userId?: string): { allowed: boolean; reason?: string } {
+  const req = item.requiredDays ?? 0;
+  if (!req || req <= 0) return { allowed: true };
+  const uid = userId || state.activeUserId;
+  const logs = (state.habitLogs || []).filter((l) => l.userId === uid && l.completed);
+  const hasForDate = (ls: HabitLog[], ds: string) => ls.some((l) => l.date === ds);
+  let streak = 0;
+  const today = new Date();
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const ds = d.toISOString().slice(0, 10);
+    if (hasForDate(logs, ds)) streak++;
+    else break;
+  }
+  if (streak < req) return { allowed: false, reason: `Necesitás ${req} días seguidos (llevás ${streak})` };
+  return { allowed: true };
 }
