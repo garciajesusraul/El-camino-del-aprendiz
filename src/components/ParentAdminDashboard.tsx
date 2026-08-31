@@ -1362,7 +1362,7 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-black text-amber-300 uppercase tracking-wider flex items-center gap-2">
                     <Gift className="w-4 h-4 text-amber-400" />
-                    <span>Catálogo de Premios Familiares</span>
+                    <span>Catálogo de Premios por Puntos de Sabiduría</span>
                   </h4>
                   {onUpdateStoreItems && (
                     <button

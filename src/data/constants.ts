@@ -1,4 +1,4 @@
-import { MateriaInfo, StoreItem, Task, ScoringConfig, ChildProfile, MedalDefinition } from '../types';
+import { HabitDefinition, MateriaInfo, MedalDefinition, ScoringConfig, StoreItem, Task, ChildProfile } from '../types';
 
 export const DEFAULT_SCORING_CONFIG: ScoringConfig = {
   simpleTaskPoints: 10,
@@ -474,54 +474,76 @@ export const INITIAL_STORE_ITEMS: StoreItem[] = [
     redeemLimit: 3,
     redeemPeriod: 'per_week',
   },
-  // Accesorios de Avatar — se ganan con monedas, con duración configurable
+  // Accesorios de Avatar — se ganan con VIDA (configurable) y duran 1 semana máximo (configurable)
   {
     id: 'avatar-backpack',
     title: 'Mochila de Explorador',
     type: 'avatar',
-    costType: 'coins',
+    costType: 'vida',
     cost: 70,
     icon: '🎒',
     description: 'Se ve en tu personaje en el juego. Equipa una mochila dorada.',
     purchased: false,
     itemKey: 'backpack',
-    avatarDuration: 'permanent',
+    gender: 'unisex',
+    avatarDuration: 'limited_days',
+    avatarDurationDays: 7,
   },
   {
     id: 'avatar-glasses',
     title: 'Gafas de Sabio',
     type: 'avatar',
-    costType: 'coins',
+    costType: 'vida',
     cost: 60,
     icon: '👓',
     description: 'Se ve en tu personaje: lentes reales sobre el rostro.',
     purchased: false,
     itemKey: 'glasses',
-    avatarDuration: 'permanent',
+    gender: 'unisex',
+    avatarDuration: 'limited_days',
+    avatarDurationDays: 7,
   },
   {
     id: 'avatar-medal',
     title: 'Medalla de Campeón',
     type: 'avatar',
-    costType: 'coins',
+    costType: 'vida',
     cost: 120,
     icon: '🥇',
     description: 'Se ve en el pecho: medalla dorada brillante.',
     purchased: false,
     itemKey: 'medal',
-    avatarDuration: 'permanent',
+    gender: 'unisex',
+    avatarDuration: 'limited_days',
+    avatarDurationDays: 7,
   },
   {
     id: 'avatar-cape',
     title: 'Capa de Héroe del Conocimiento',
     type: 'avatar',
-    costType: 'coins',
+    costType: 'vida',
     cost: 150,
     icon: '🦸',
     description: 'Se ve flameando detrás: capa roja de héroe.',
     purchased: false,
     itemKey: 'cape',
-    avatarDuration: 'permanent',
+    gender: 'unisex',
+    avatarDuration: 'limited_days',
+    avatarDurationDays: 7,
+  },
+  {
+    id: 'avatar-lantern',
+    title: 'Linterna de Explorador',
+    type: 'avatar',
+    costType: 'vida',
+    cost: 80,
+    icon: '🔦',
+    description: 'Linterna que ilumina tus aventuras. Se ve en la mano del personaje.',
+    purchased: false,
+    itemKey: 'lantern',
+    gender: 'unisex',
+    avatarDuration: 'limited_days',
+    avatarDurationDays: 7,
   },
 ];
 
@@ -548,4 +570,19 @@ export function getDefaultMedalDefinitions(): MedalDefinition[] {
   // Kinder
   defs.push({ id: 'medal-kinder-s1', title: 'Kinder: Semana 1', description: 'Semana 1 de Aventuras de Kinder', icon: '🎈', materiaId: KINDER_MATERIA.id, criteriaType: 'week_complete', criteriaParams: { semana: 1, bimestre: 1 }, enabled: true });
   return defs;
+}
+
+export function getDefaultHabitDefinitions(): HabitDefinition[] {
+  return [
+    { id: 'habit-tender-cama', title: 'Tender la cama y ordenar la habitación', description: 'Dejar la habitación ordenada al levantarse', icon: '🛏️', points: 10, goalType: 'daily', goalCount: 1, enabled: true },
+    { id: 'habit-lavarse-dientes-cara', title: 'Lavarse los dientes y la cara', description: 'Higiene facial y dental', icon: '🪥', points: 5, goalType: 'daily', goalCount: 4, enabled: true },
+    { id: 'habit-banarse-vestirse', title: 'Bañarse a tiempo y vestirse solo', description: 'Higiene y autonomía', icon: '🚿', points: 30, goalType: 'weekly', goalCount: 4, enabled: true },
+    { id: 'habit-lectura-biblia', title: 'Lectura de la biblia por día', description: 'Tiempo diario con la Palabra', icon: '📖', points: 10, goalType: 'daily', goalCount: 1, enabled: true },
+    { id: 'habit-trabajo-sin-distraerse', title: 'Trabajo en su tarea sin distraerse por 1 hora', description: 'Concentración sostenida', icon: '⏳', points: 20, goalType: 'daily', goalCount: 1, enabled: true },
+    { id: 'habit-guardar-juguetes', title: 'Guardar los juguetes y materiales utilizados durante el día', description: 'Orden al finalizar el juego', icon: '🧸', points: 20, goalType: 'daily', goalCount: 1, enabled: true },
+    { id: 'habit-guardar-utiles', title: 'Cuando termina la tarea, guarda los útiles', description: 'Guardar útiles al terminar', icon: '✏️', points: 10, goalType: 'daily', goalCount: 1, enabled: true },
+    { id: 'habit-poner-mesa', title: 'Poner o levantar la mesa en las comidas', description: 'Colaborar en la mesa', icon: '🍽️', points: 5, goalType: 'daily', goalCount: 1, enabled: true },
+    { id: 'habit-ropa-canasto', title: 'Deja la ropa sucia en el canasto', description: 'Hábitos de orden', icon: '👕', points: 5, goalType: 'daily', goalCount: 1, enabled: true },
+    { id: 'habit-higiene-nocturna', title: 'Hábitos de higiene nocturna SOLITO (dientes y baño) sin que un adulto le insista', description: 'Autonomía nocturna', icon: '🌙', points: 5, goalType: 'daily', goalCount: 1, enabled: true },
+  ];
 }

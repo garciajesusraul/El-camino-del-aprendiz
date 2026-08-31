@@ -289,6 +289,9 @@ export class PixelArtRenderer {
     // 5. Wall Decorations: Space / Unicorn Posters, Corkboard & Floating Shelves
     this.renderKidWallDecorations(ctx, isGirl);
 
+    // 5b. Cuadro grande HABITOS en la pared central (interactivo)
+    this.renderHabitBoard(ctx, 330, 38, 140, 72, isGirl);
+
     // 6. Kid's Creative & Homework Desk on the Left Wall
     this.renderKidDesk(ctx, 35, 175, isGirl);
 
