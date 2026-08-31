@@ -1,5 +1,5 @@
 import { AppState, AvatarActive, ChildProfile, GameSettings, GenderType, GradeLevelType, HabitDefinition, HabitLog, ManualMedalOverride, MedalDefinition, ScoringConfig, StoreItem, Task, TaskStatus } from '../types';
-import { DEFAULT_SCORING_CONFIG, getDefaultHabitDefinitions, getDefaultMedalDefinitions, INITIAL_STORE_ITEMS, MATERIAS, generateSeedTasks } from '../data/constants';
+import { DEFAULT_PROMISES, DEFAULT_SCORING_CONFIG, getDefaultHabitDefinitions, getDefaultMedalDefinitions, INITIAL_STORE_ITEMS, MATERIAS, generateSeedTasks } from '../data/constants';
 
 const STORAGE_KEY = 'ruta_aprendiz_game_state_v1';
 
@@ -57,6 +57,7 @@ export function createDefaultProfile(
       accessory: 'backpack',
     },
     inventory: ['backpack'],
+    pomodoroMinutes: 20,
   };
 }
 
@@ -92,6 +93,7 @@ export function getDefaultState(): AppState {
     habitDefinitions: getDefaultHabitDefinitions(),
     habitLogs: [],
     playStats: { totalMinutes: 0, activeMinutes: 0 },
+    promises: [...DEFAULT_PROMISES],
     settings: defaultSettings,
     currentMateria: null,
     currentCity: 1,
@@ -126,6 +128,8 @@ export function loadAppState(): AppState {
         autoApproveInChildMode: false,
         scoring: DEFAULT_SCORING_CONFIG,
         theme: 'dark',
+        habitBoardWidth: 140,
+        habitBoardHeight: 72,
       };
     } else {
       if (!parsed.settings.parentPin) parsed.settings.parentPin = '2026';
@@ -156,6 +160,13 @@ export function loadAppState(): AppState {
       activeProf = parsed.profiles[0];
       parsed.activeUserId = activeProf.id;
     }
+
+    // Sync pomodoroMinutes default per profile
+    parsed.profiles = parsed.profiles.map((p: any) => {
+      if (p.pomodoroMinutes === undefined) p.pomodoroMinutes = 20;
+      return p;
+    });
+    if ((parsed.profile as any).pomodoroMinutes === undefined) (parsed.profile as any).pomodoroMinutes = (parsed.profiles.find((p: any)=>p.id===parsed.activeUserId) as any)?.pomodoroMinutes ?? 20;
 
     // Sync avatar & real KM for all profiles
     parsed.profiles = parsed.profiles.map((p) => {
@@ -241,6 +252,9 @@ export function loadAppState(): AppState {
     if (!parsed.rewardRedemptions) parsed.rewardRedemptions = [];
     if (!parsed.avatarActives) parsed.avatarActives = [];
     if (!parsed.playStats) parsed.playStats = { totalMinutes: 0, activeMinutes: 0 };
+    if (!parsed.promises || !Array.isArray(parsed.promises)) parsed.promises = [...DEFAULT_PROMISES];
+    // keep promises as string array, trim empties
+    parsed.promises = parsed.promises.map((s: string) => s.trim()).filter((s: string) => s.length > 0);
     // Expirar avatares temporales vencidos
     const nowIso = new Date().toISOString();
     parsed.avatarActives = parsed.avatarActives.filter((a) => !a.expiresAt || a.expiresAt > nowIso);
@@ -440,6 +454,29 @@ export function updateHabitBoardSize(state: AppState, width: number, height: num
   const w = Math.max(80, Math.min(260, Math.round(width)));
   const h = Math.max(40, Math.min(160, Math.round(height)));
   const newState: AppState = { ...state, settings: { ...state.settings, habitBoardWidth: w, habitBoardHeight: h } };
+  saveAppState(newState);
+  return newState;
+}
+
+export function updatePomodoroMinutes(state: AppState, userId: string, minutes: number): AppState {
+  const m = Math.max(5, Math.min(60, Math.round(minutes)));
+  const updatedProfiles = state.profiles.map((p) => (p.id === userId ? { ...p, pomodoroMinutes: m } : p));
+  const activeProf = updatedProfiles.find((p) => p.id === state.activeUserId) || state.profile;
+  const newState: AppState = { ...state, profiles: updatedProfiles, profile: { ...activeProf, pomodoroMinutes: activeProf.pomodoroMinutes ?? m } };
+  saveAppState(newState);
+  return newState;
+}
+
+export function updatePromises(state: AppState, promises: string[]): AppState {
+  const cleaned = promises.map((s) => s.trim()).filter((s) => s.length > 0);
+  const newState: AppState = { ...state, promises: cleaned };
+  saveAppState(newState);
+  return newState;
+}
+
+export function incrementPlayStats(state: AppState, totalInc: number = 0, activeInc: number = 0): AppState {
+  const cur = state.playStats || { totalMinutes: 0, activeMinutes: 0 };
+  const newState: AppState = { ...state, playStats: { totalMinutes: cur.totalMinutes + totalInc, activeMinutes: cur.activeMinutes + activeInc, lastSessionAt: new Date().toISOString() } };
   saveAppState(newState);
   return newState;
 }

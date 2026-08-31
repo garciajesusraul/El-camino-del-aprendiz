@@ -44,6 +44,8 @@ export const RewardEditorModal: React.FC<RewardEditorModalProps> = ({
   const [redeemLimit, setRedeemLimit] = useState<number>(item?.redeemLimit || 1);
   const [avatarDuration, setAvatarDuration] = useState<'permanent' | 'limited_days'>(item?.avatarDuration || 'permanent');
   const [avatarDurationDays, setAvatarDurationDays] = useState<number>(item?.avatarDurationDays || 7);
+  const [requiredDays, setRequiredDays] = useState<number>(item?.requiredDays ?? 0);
+  const [gender, setGender] = useState<'boy' | 'girl' | 'unisex'>((item?.gender as any) || 'unisex');
 
   // Icon Picker Filter State
   const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
@@ -75,10 +77,12 @@ export const RewardEditorModal: React.FC<RewardEditorModalProps> = ({
       icon: selectedIcon,
       purchased: item?.purchased || false,
       itemKey: item?.itemKey,
-      redeemLimit: type === 'real_life' && redeemPeriod !== 'unlimited' ? Math.max(1, redeemLimit) : undefined,
-      redeemPeriod: type === 'real_life' ? redeemPeriod : undefined,
+      redeemLimit: redeemPeriod !== 'unlimited' ? Math.max(1, redeemLimit) : undefined,
+      redeemPeriod: redeemPeriod,
       avatarDuration: type === 'avatar' ? avatarDuration : undefined,
       avatarDurationDays: type === 'avatar' && avatarDuration === 'limited_days' ? Math.max(1, avatarDurationDays) : undefined,
+      requiredDays: Math.max(0, requiredDays),
+      gender: type === 'avatar' ? gender : undefined,
     };
 
     onSave(newItem);
@@ -182,34 +186,33 @@ export const RewardEditorModal: React.FC<RewardEditorModalProps> = ({
                 </div>
               </div>
               {/* Límite por semana/mes (todos los premios) y duración avatar */}
-              {type === 'real_life' ? (
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">Límite canje</label>
-                    <select
-                      value={redeemPeriod}
-                      onChange={(e) => setRedeemPeriod(e.target.value as any)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-2 py-2 text-xs font-bold text-white focus:outline-none focus:border-amber-400"
-                    >
-                      <option value="unlimited">Sin límite</option>
-                      <option value="per_week">Por semana</option>
-                      <option value="per_month">Por mes</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">Veces {redeemPeriod === 'per_month' ? 'por mes' : redeemPeriod === 'per_week' ? 'por semana' : ''}</label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={99}
-                      value={redeemLimit}
-                      disabled={redeemPeriod === 'unlimited'}
-                      onChange={(e) => setRedeemLimit(Number(e.target.value))}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white font-mono focus:outline-none focus:border-amber-400 disabled:opacity-40"
-                    />
-                  </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Límite canje</label>
+                  <select
+                    value={redeemPeriod}
+                    onChange={(e) => setRedeemPeriod(e.target.value as any)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-2 py-2 text-xs font-bold text-white focus:outline-none focus:border-amber-400"
+                  >
+                    <option value="unlimited">Sin límite</option>
+                    <option value="per_week">Por semana</option>
+                    <option value="per_month">Por mes</option>
+                  </select>
                 </div>
-              ) : (
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Veces {redeemPeriod === 'per_month' ? 'por mes' : redeemPeriod === 'per_week' ? 'por semana' : ''}</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={99}
+                    value={redeemLimit}
+                    disabled={redeemPeriod === 'unlimited'}
+                    onChange={(e) => setRedeemLimit(Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white font-mono focus:outline-none focus:border-amber-400 disabled:opacity-40"
+                  />
+                </div>
+              </div>
+              {type === 'avatar' && (
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-xs font-bold text-slate-300 mb-1">Duración avatar</label>
@@ -236,6 +239,36 @@ export const RewardEditorModal: React.FC<RewardEditorModalProps> = ({
                   </div>
                 </div>
               )}
+              {/* NEW: requiredDays + gender por sexo */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Días seguidos requeridos (0=sin límite)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={365}
+                    value={requiredDays}
+                    onChange={(e) => setRequiredDays(Math.max(0, Number(e.target.value)))}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white font-mono focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+                {type === 'avatar' ? (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">Avatar por sexo</label>
+                    <select
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value as any)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-2 py-2 text-xs font-bold text-white focus:outline-none focus:border-amber-400"
+                    >
+                      <option value="unisex">Unisex</option>
+                      <option value="boy">Solo niño</option>
+                      <option value="girl">Solo niña</option>
+                    </select>
+                  </div>
+                ) : (
+                  <div className="flex items-end text-[11px] text-slate-500">Si es &gt;0, se valida con `canRedeemHabitReward` (racha de hábitos).</div>
+                )}
+              </div>
             </div>
 
             {/* Icon Picker Section */}

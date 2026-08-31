@@ -156,7 +156,9 @@ export class PixelArtRenderer {
     ctx: CanvasRenderingContext2D,
     width: number,
     height: number,
-    profile: ChildProfile
+    profile: ChildProfile,
+    habitBoardWidth?: number,
+    habitBoardHeight?: number
   ) {
     const isGirl = profile.gender === 'girl';
     const wallHeight = 145;
@@ -289,8 +291,12 @@ export class PixelArtRenderer {
     // 5. Wall Decorations: Space / Unicorn Posters, Corkboard & Floating Shelves
     this.renderKidWallDecorations(ctx, isGirl);
 
-    // 5b. Cuadro grande HABITOS en la pared central (interactivo)
-    this.renderHabitBoard(ctx, 330, 38, 140, 72, isGirl);
+    // 5b. Cuadro grande HABITOS en la pared central (interactivo) - configurable desde Ajustes & PIN
+    {
+      const bw = Math.max(80, Math.min(260, Math.round(habitBoardWidth ?? 140)));
+      const bh = Math.max(40, Math.min(160, Math.round(habitBoardHeight ?? 72)));
+      this.renderHabitBoard(ctx, 330, 38, bw, bh, isGirl);
+    }
 
     // 6. Kid's Creative & Homework Desk on the Left Wall
     this.renderKidDesk(ctx, 35, 175, isGirl);
@@ -3494,6 +3500,52 @@ export class PixelArtRenderer {
     ctx.lineTo(x - 20, y + h + 150);
     ctx.closePath();
     ctx.fill();
+  }
+
+  // 3b. Cuadro HABITOS configurable (marco madera, fondo crema, título dorado)
+  private renderHabitBoard(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, isGirl?: boolean) {
+    // Sombra
+    ctx.fillStyle = 'rgba(0,0,0,0.32)';
+    ctx.fillRect(x + 2, y + 2, w, h);
+    // Marco madera
+    ctx.fillStyle = isGirl ? '#581c87' : '#5c2b09';
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = isGirl ? '#7c3aed' : '#78350f';
+    ctx.fillRect(x + 2, y + 2, w - 4, h - 4);
+    // Fondo crema interior
+    ctx.fillStyle = isGirl ? '#fff1f2' : '#fdfbf7';
+    ctx.fillRect(x + 5, y + 5, w - 10, h - 10);
+    // Borde interior dorado sutil
+    ctx.strokeStyle = 'rgba(245,158,11,0.55)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 6.5, y + 6.5, w - 13, h - 13);
+    // Pushpins dorados en esquinas
+    ctx.fillStyle = '#fde047';
+    ctx.fillRect(x + 2, y + 2, 3, 3);
+    ctx.fillRect(x + w - 5, y + 2, 3, 3);
+    ctx.fillRect(x + 2, y + h - 5, 3, 3);
+    ctx.fillRect(x + w - 5, y + h - 5, 3, 3);
+    // Título HABITOS centrado dorado
+    ctx.fillStyle = isGirl ? '#be185d' : '#92400e';
+    ctx.font = `bold ${Math.max(9, Math.min(13, Math.floor(w / 11)))}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('HABITOS', x + w / 2, y + 15);
+    // Línea decorativa bajo título
+    ctx.fillStyle = 'rgba(245,158,11,0.35)';
+    ctx.fillRect(x + 10, y + 18, w - 20, 1);
+    // Placeholder de checks / líneas si el board es alto
+    if (h > 52) {
+      ctx.fillStyle = isGirl ? '#fbcfe8' : '#fde68a';
+      for (let i = 0; i < 3; i++) {
+        const ly = y + 26 + i * 12;
+        if (ly + 6 > y + h - 6) break;
+        ctx.fillRect(x + 10, ly, 8, 8);
+        ctx.fillStyle = isGirl ? '#fce7f3' : '#fffbeb';
+        ctx.fillRect(x + 21, ly + 3, w - 34, 2);
+        ctx.fillStyle = isGirl ? '#fbcfe8' : '#fde68a';
+      }
+    }
+    ctx.textAlign = 'start';
   }
 
   // 3. Decoraciones de pared infantil (Pósters espaciales/unicornios, dinosaurios/gatitos, corcho)

@@ -572,6 +572,39 @@ export function getDefaultMedalDefinitions(): MedalDefinition[] {
   return defs;
 }
 
+export const DEFAULT_PROMISES: string[] = [
+  'Josué 1:9 – "¡Sé fuerte y valiente! ¡No tengas miedo ni te desanimes! Porque el Señor tu Dios está contigo dondequiera que vayas".',
+  'Salmo 23:4 – "Incluso cuando pase por el valle más oscuro, no temeré peligro alguno, porque tú estás a mi lado".',
+  'Mateo 28:20 – "Y tengan por seguro esto: que estoy con ustedes siempre, hasta el fin de los tiempos".',
+  'Salmo 46:1 – "Dios es nuestro amparo y nuestra fuerza, siempre está dispuesto a ayudarnos en los tiempos de dificultad".',
+  'Isaías 41:10 – "No tengas miedo, porque yo estoy contigo; no te desalientes, porque yo es tu Dios. Te daré fuerzas y te ayudaré".',
+  'Salmo 121:7 – "El Señor te libra de todo mal y cuida tu vida".',
+  'Proverbios 3:24 – "Puedes irte a dormir sin miedo; te acostarás y dormirás profundamente".',
+  'Salmo 91:11 – "Pues él ordenará a sus ángeles que te protejan por dondequiera que vayas".',
+  'Salmo 34:7 – "Pues el ángel del Señor es un guardián; rodea y defiende a todos los que le temen".',
+  '2 Tesalonicenses 3:3 – "Pero el Señor es fiel; él los fortalecerá y los protegerá del maligno".',
+  'Jeremías 31:3 – "Con amor eterno te he amado; por eso te sigo mostrando mi fidelidad".',
+  '1 Juan 3:1 – "Miren cuánto nos ama nuestro Padre celestial, que nos llama sus hijos, ¡y lo somos!".',
+  'Salmo 100:5 – "Pues el Señor es bueno. Su amor inagotable permanece para siempre, y su fidelidad continúa de generación en generación".',
+  'Romanos 8:39 – "Ningún poder... será capaz de separarnos del amor de Dios que está en Cristo Jesús nuestro Señor".',
+  'Sofonías 3:17 – "El Señor tu Dios vive en medio de ti... Se deleitará en ti con alegría. Con su amor calmará todos tus temores".',
+  '1 Pedro 5:7 – "Pongan todas sus preocupaciones y ansiedades en las manos de Dios, porque él cuida de ustedes".',
+  'Salmo 34:17 – "El Señor escucha a los suyos cuando le piden auxilio; los rescata de todas sus dificultades".',
+  'Jeremías 29:12 – "En esos días, cuando oren, los escucharé".',
+  'Mateo 7:7 – "Sigue pidiendo y recibirás lo que pides; sigue buscando y encontrarás; sigue llamando y la puerta se te abrirá".',
+  'Salmo 50:15 – "Llamame en el día de la angustia; yo te libraré, y tú me honrarás".',
+  'Juan 14:27 – "Les dejo un regalo: paz en la mente y en el corazón... Así que no se preocupen ni tengan miedo".',
+  'Filipenses 4:7 – "La paz de Dios, que supera todo lo que podemos entender, cuidará sus corazones y sus mentes".',
+  'Salmo 16:11 – "Me mostrarás el camino de la vida; en tu presencia hay plenitud de gozo".',
+  'Nehemías 8:10 – "No se entristezcan, porque el gozo del Señor es su fuerza".',
+  'Isaías 26:3 – "¡Tú guardarás en perfecta paz a todos los que confían en ti; a todos los que concentran en ti sus pensamientos!".',
+  'Jeremías 29:11 – "Pues yo sé los planes que tengo para ustedes —dice el Señor—. Son planes para lo bueno y no para lo malo, para darles un futuro y una esperanza".',
+  'Salmo 139:14 – "¡Gracias por hacerme tan maravillosamente complejo! Tu mano de obra es maravillosa".',
+  'Proverbios 3:6 – "Busca su voluntad en todo lo que hagas, y él te mostrará cuál camino tomar".',
+  'Filipenses 1:6 – "Dios empezó el buen trabajo en ustedes, y estoy seguro de que lo continuará hasta que quede terminado".',
+  'Romanos 8:28 – "Y sabemos que Dios hace que todas las cosas cooperen para el bien de los que lo aman".',
+];
+
 export function getDefaultHabitDefinitions(): HabitDefinition[] {
   return [
     { id: 'habit-tender-cama', title: 'Tender la cama y ordenar la habitación', description: 'Dejar la habitación ordenada al levantarse', icon: '🛏️', points: 10, goalType: 'daily', goalCount: 1, enabled: true },

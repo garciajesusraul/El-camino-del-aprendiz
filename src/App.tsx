@@ -25,6 +25,13 @@ import {
   updateScoringConfig,
   updateSoundVolume,
   updateTheme,
+  updateHabitBoardSize,
+  toggleHabitToday,
+  upsertHabitDefinition,
+  deleteHabitDefinition,
+  updatePomodoroMinutes,
+  updatePromises,
+  incrementPlayStats,
   updateUserPoints,
   canRedeemReward,
   redeemReward,
@@ -36,6 +43,8 @@ import { ParentAdminDashboard } from './components/ParentAdminDashboard';
 import { StoreModal } from './components/StoreModal';
 import { DailyPointsModal } from './components/DailyPointsModal';
 import { MedalAlbum } from './components/MedalAlbum';
+import { HabitsBoard } from './components/HabitsBoard';
+import { LeonPomodoro } from './components/LeonPomodoro';
 import { MATERIAS, KINDER_MATERIA } from './data/constants';
 import { sound } from './services/audio';
 
@@ -48,25 +57,25 @@ export default function App() {
   const [showStore, setShowStore] = useState(false);
   const [showMedalAlbum, setShowMedalAlbum] = useState(false);
   const [showDailyPoints, setShowDailyPoints] = useState(false);
+  const [showHabitsBoard, setShowHabitsBoard] = useState(false);
+  const [showPromise, setShowPromise] = useState<string | null>(null);
   const [sessionSec, setSessionSec] = useState(0);
   const [activeSec, setActiveSec] = useState(0);
   const sessionStartRef = React.useRef<number>(Date.now());
+  const isMovingRef = React.useRef(false);
 
-  // Timer minimalista siempre visible 00:20
+  // Timer minimalista siempre visible 00:20 + tracking total/active
   useEffect(() => {
     const id = window.setInterval(() => {
       setSessionSec(Math.floor((Date.now() - sessionStartRef.current) / 1000));
+      if (isMovingRef.current) setActiveSec((prev) => prev + 1);
     }, 1000);
     return () => window.clearInterval(id);
   }, []);
   // Persist stats cada minuto
   useEffect(() => {
     if (sessionSec > 0 && sessionSec % 60 === 0) {
-      setState((prev) => {
-        const ns = { ...prev, playStats: { ...prev.playStats, totalMinutes: (prev.playStats?.totalMinutes || 0) + 1, activeMinutes: (prev.playStats?.activeMinutes || 0) + Math.floor(activeSec / 60) } };
-        saveAppState(ns);
-        return ns;
-      });
+      setState((prev) => incrementPlayStats(prev, 1, Math.floor(activeSec / 60)));
       setActiveSec(0);
     }
   }, [sessionSec, activeSec]);
@@ -169,7 +178,32 @@ export default function App() {
 
   // Parent Admin Handlers
   const handleApproveTasks = (taskIds: string[]) => {
-    setState((prev) => approveTasks(prev, taskIds));
+    // Detect week_complete before/after to trigger promise
+    setState((prev) => {
+      const beforeWeeks = new Map<string, boolean>();
+      const weekKey = (t: Task) => `${t.materiaId}|${t.bimestre}|${t.semana}`;
+      for (const t of prev.tasks) {
+        const k = weekKey(t);
+        if (!beforeWeeks.has(k)) {
+          const weekTasks = prev.tasks.filter((x) => weekKey(x) === k);
+          beforeWeeks.set(k, weekTasks.length > 0 && weekTasks.every((x) => x.status === 'approved'));
+        }
+      }
+      const next = approveTasks(prev, taskIds);
+      const newlyComplete: string[] = [];
+      for (const t of next.tasks) {
+        const k = weekKey(t);
+        if (!beforeWeeks.get(k)) {
+          const weekTasks = next.tasks.filter((x) => weekKey(x) === k);
+          if (weekTasks.length > 0 && weekTasks.every((x) => x.status === 'approved')) newlyComplete.push(k);
+        }
+      }
+      if (newlyComplete.length > 0 && next.promises && next.promises.length > 0) {
+        const randomPromise = next.promises[Math.floor(Math.random() * next.promises.length)];
+        window.setTimeout(() => setShowPromise(randomPromise), 300);
+      }
+      return next;
+    });
   };
 
   const handleRejectTask = (taskId: string) => {
@@ -310,6 +344,18 @@ export default function App() {
     setState((prev) => updateTheme(prev, theme));
   };
 
+  const handleUpdateHabitBoardSize = (width: number, height: number) => {
+    setState((prev) => updateHabitBoardSize(prev, width, height));
+  };
+
+  const handleToggleHabit = (habitId: string) => {
+    setState((prev) => toggleHabitToday(prev, habitId));
+  };
+  const handleUpsertHabit = (def: any) => setState((prev) => upsertHabitDefinition(prev, def));
+  const handleDeleteHabit = (habitId: string) => setState((prev) => deleteHabitDefinition(prev, habitId));
+  const handleUpdatePomodoro = (userId: string, minutes: number) => setState((prev) => updatePomodoroMinutes(prev, userId, minutes));
+  const handleUpdatePromises = (promises: string[]) => setState((prev) => updatePromises(prev, promises));
+
   const handleUpdateParentPin = (newPin: string) => {
     setState((prev) => {
       const nextState: AppState = {
@@ -440,8 +486,12 @@ export default function App() {
           onOpenStore={() => setShowStore(true)}
           onOpenAdmin={() => setShowAdmin(true)}
           onUpdateVolume={handleUpdateVolume}
+          onOpenHabitsBoard={() => setShowHabitsBoard(true)}
+          onActivity={(moving) => { isMovingRef.current = moving; }}
         />
       </main>
+      {/* LEON perro marrón - bottom left, pomodoro 20 min por perfil */}
+      <LeonPomodoro pomodoroMinutes={state.profile.pomodoroMinutes ?? 20} onComplete={() => { /* celebration handled inside */ }} />
 
       {/* Pantalla 5: Libreta de Misiones Modal */}
       {showNotebook && (
@@ -478,6 +528,12 @@ export default function App() {
           onUpdateParentPin={handleUpdateParentPin}
           onUpdateVolume={handleUpdateVolume}
           onUpdateTheme={handleUpdateTheme}
+          onUpdateHabitBoardSize={handleUpdateHabitBoardSize}
+          onToggleHabit={handleToggleHabit}
+          onUpsertHabit={handleUpsertHabit}
+          onDeleteHabit={handleDeleteHabit}
+          onUpdatePomodoro={handleUpdatePomodoro}
+          onUpdatePromises={handleUpdatePromises}
           onToggleMedalEnabled={handleToggleMedalEnabled}
           onUpsertMedal={handleUpsertMedal}
           onDeleteMedal={handleDeleteMedal}
@@ -501,6 +557,33 @@ export default function App() {
           onClose={() => setShowDailyPoints(false)}
           onOpenNotebook={() => { setShowDailyPoints(false); handleOpenNotebook(); }}
         />
+      )}
+
+      {/* Modal Hábitos - interactivo desde cuadro HABITOS en Casa */}
+      {showHabitsBoard && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 animate-fade-in select-none">
+          <div className="relative w-full max-w-2xl max-h-[92vh] flex flex-col bg-slate-900 border-2 border-emerald-500/90 rounded-3xl shadow-[0_16px_60px_rgba(0,0,0,0.85)] overflow-hidden">
+            <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-950 p-4 border-b border-emerald-500/40 flex items-center justify-between">
+              <h3 className="text-base font-black text-emerald-300 flex items-center gap-2"><span className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-400 flex items-center justify-center">🖼️</span> Cuadro de Hábitos</h3>
+              <button onClick={() => setShowHabitsBoard(false)} className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center border border-slate-700">✕</button>
+            </div>
+            <div className="p-4 overflow-y-auto">
+              <HabitsBoard state={state} onToggleHabit={handleToggleHabit} onClose={() => setShowHabitsBoard(false)} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cartel Promesa de Dios - al completar semana */}
+      {showPromise && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
+          <div className="w-full max-w-xl bg-gradient-to-br from-amber-950 via-slate-900 to-indigo-950 border-2 border-amber-400 rounded-3xl shadow-[0_16px_60px_rgba(0,0,0,0.85)] p-6 text-center">
+            <div className="text-4xl mb-2">📖 ✨</div>
+            <h3 className="text-lg font-black text-amber-300">¡Semana completada!</h3>
+            <p className="text-sm text-amber-100 mt-3 leading-relaxed font-serif italic">"{showPromise}"</p>
+            <button onClick={() => setShowPromise(null)} className="mt-5 px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 font-black text-sm shadow cursor-pointer">¡Amén! 🙏</button>
+          </div>
+        </div>
       )}
 
       {/* Álbum de Medallas - visible para niño */}

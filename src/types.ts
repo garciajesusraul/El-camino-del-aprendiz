@@ -79,6 +79,7 @@ export interface ChildProfile {
     accessory: 'none' | 'backpack' | 'glasses' | 'medal' | 'cape' | 'lantern';
   };
   inventory: string[];
+  pomodoroMinutes?: number; // minutos por defecto 20, configurable por niño
 }
 
 export type RedemptionPeriod = 'unlimited' | 'per_week' | 'per_month';
@@ -206,6 +207,7 @@ export interface AppState {
   habitDefinitions: HabitDefinition[];
   habitLogs: HabitLog[];
   playStats: PlayStats;
+  promises: string[];
   settings: GameSettings;
   currentMateria: string | null;
   currentCity: number; // 1 to 4

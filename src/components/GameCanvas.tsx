@@ -29,6 +29,8 @@ interface GameCanvasProps {
   onOpenStore?: () => void;
   onOpenAdmin?: () => void;
   onUpdateVolume?: (volume: number) => void;
+  onOpenHabitsBoard?: () => void;
+  onActivity?: (isMoving: boolean) => void;
 }
 
 interface DialogueData {
@@ -49,6 +51,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   onOpenNotebook,
   onOpenStore,
   onOpenAdmin,
+  onOpenHabitsBoard,
+  onActivity,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -252,13 +256,32 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       }
     } else if (state.currentScene === 'HOUSE') {
+      // Habit board hitbox (330,38,w,h) — dinámico según Ajustes & PIN
+      {
+        const bw = state.settings.habitBoardWidth ?? 140;
+        const bh = state.settings.habitBoardHeight ?? 72;
+        if (cx >= 330 && cx <= 330 + bw && cy >= 38 && cy <= 38 + bh) {
+          sound.playSelect();
+          if (onOpenHabitsBoard) onOpenHabitsBoard();
+          else setActiveDialogue({
+            speakerName: 'Cuadro de Hábitos',
+            speakerRole: 'Hábitos Diarios',
+            avatarEmoji: '🖼️',
+            avatarBg: 'bg-emerald-700',
+            text: '¡Tocá el cuadro para registrar tus hábitos de hoy y ganar puntos de vida!',
+            primaryActionLabel: 'Abrir Hábitos [A]',
+            onPrimaryAction: () => { setActiveDialogue(null); if (onOpenHabitsBoard) onOpenHabitsBoard(); },
+          });
+          return;
+        }
+      }
       if (cy > 430 && cx > 310 && cx < 490) {
         if (!canEnter()) return;
         sound.playDoor();
         onSceneChange('PLAZA');
       }
     }
-  }, [activeDialogue, state, onSceneChange, onOpenNotebook, canEnter]);
+  }, [activeDialogue, state, onSceneChange, onOpenNotebook, onOpenHabitsBoard, canEnter]);
 
   // Detect season
   const getEffectiveSeason = useCallback(() => {
@@ -336,7 +359,32 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       if (p.y > 430 && p.x > 310 && p.x < 490) {
         sound.playDoor();
         onSceneChange('PLAZA');
-      } else {
+        return;
+      }
+      // Habit board interaction - hitbox dinámica 330,38 + settings
+      {
+        const bw = state.settings.habitBoardWidth ?? 140;
+        const bh = state.settings.habitBoardHeight ?? 72;
+        const inHabitBoard = p.x >= 330 && p.x <= 330 + bw && p.y >= 70 && p.y <= 170;
+        if (inHabitBoard || (p.x >= 310 && p.x <= 500 && p.y < 180)) {
+          // prioridad al cuadro si estás cerca de la pared central
+          const isNearBoard = p.x >= 320 && p.x <= 480 && p.y < 200;
+          if (isNearBoard) {
+            sound.playSelect();
+            if (onOpenHabitsBoard) onOpenHabitsBoard();
+            else setActiveDialogue({
+              speakerName: 'Cuadro de Hábitos',
+              speakerRole: 'Hábitos Diarios',
+              avatarEmoji: '🖼️',
+              avatarBg: 'bg-emerald-700',
+              text: '¡Registrá tus hábitos de hoy y ganá puntos de vida!',
+              primaryActionLabel: 'Abrir Hábitos [A]',
+              onPrimaryAction: () => { setActiveDialogue(null); if (onOpenHabitsBoard) onOpenHabitsBoard(); },
+            });
+            return;
+          }
+        }
+      }
         // Open Dad's RPG dialogue with large font
         sound.playSelect();
         setActiveDialogue({
@@ -354,7 +402,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           secondaryActionLabel: 'Quedarme en Casa',
           onSecondaryAction: () => setActiveDialogue(null),
         });
-      }
     } else if (state.currentScene === 'PLAZA') {
       // Return north to house
       if (p.y < 120 && Math.abs(p.x - 400) < 70) {
@@ -489,7 +536,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       }
     }
-  }, [activeDialogue, state, onSceneChange]);
+  }, [activeDialogue, state, onSceneChange, onOpenHabitsBoard]);
 
   // Keyboard Event Listeners for Arrow Keys + [A], [B], [C], [P], [F]
   useEffect(() => {
@@ -639,7 +686,14 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           if (nextY > 430 && nextX > 300 && nextX < 500) {
             promptText = '🚪 Presioná [A] para salir al día';
           } else {
-            promptText = '💬 Presioná [A] para hablar con Papá o [M] para Misiones';
+            const bw = state.settings.habitBoardWidth ?? 140;
+            // const bh = state.settings.habitBoardHeight ?? 72;
+            const nearHabits = nextX >= 315 && nextX <= 330 + bw + 15 && nextY < 200;
+            if (nearHabits) {
+              promptText = '🖼️ Presioná [A] para abrir Hábitos';
+            } else {
+              promptText = '💬 Presioná [A] para hablar con Papá o [M] para Misiones';
+            }
           }
         } else if (state.currentScene === 'PLAZA') {
           if (nextY < 120 && Math.abs(nextX - 400) < 70) {
@@ -821,6 +875,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         animFrame: newAnimFrame,
         animTimer: newAnimTimer,
       });
+      if (onActivity) onActivity(isMoving);
 
       // Update particles
       const season = getEffectiveSeason();
@@ -831,7 +886,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (state.currentScene === 'HOUSE') {
-        pixelArtRenderer.renderHouseInterior(ctx, canvas.width, canvas.height, state.profile);
+        pixelArtRenderer.renderHouseInterior(ctx, canvas.width, canvas.height, state.profile, state.settings.habitBoardWidth, state.settings.habitBoardHeight);
       } else if (state.currentScene === 'PLAZA') {
         pixelArtRenderer.renderPlazaScene(ctx, canvas.width, canvas.height, season, state.profile);
       } else if (state.currentScene === 'MATERIA_MAP') {

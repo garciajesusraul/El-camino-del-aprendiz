@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { AppState, ChildProfile, GenderType, GradeLevelType, ScoringConfig, StoreItem, Task } from '../types';
+import { AppState, ChildProfile, GenderType, GradeLevelType, HabitDefinition, ScoringConfig, StoreItem, Task } from '../types';
 import { MATERIAS, BIMESTRES_INFO, KINDER_MATERIA, DEFAULT_SCORING_CONFIG } from '../data/constants';
 import { PixelAvatar } from './PixelAvatar';
 import { RewardEditorModal } from './RewardEditorModal';
 import { MedalAlbum } from './MedalAlbum';
+import { getHabitCompliance } from '../services/storage';
 import {
   X,
   CheckCircle2,
@@ -90,6 +91,12 @@ interface ParentAdminDashboardProps {
   ) => void;
   onDeleteTask?: (taskId: string) => void;
   onUpdateTheme?: (theme: 'dark' | 'light' | 'semi') => void;
+  onUpdateHabitBoardSize?: (width: number, height: number) => void;
+  onToggleHabit?: (habitId: string) => void;
+  onUpsertHabit?: (def: HabitDefinition) => void;
+  onDeleteHabit?: (habitId: string) => void;
+  onUpdatePomodoro?: (userId: string, minutes: number) => void;
+  onUpdatePromises?: (promises: string[]) => void;
   onToggleMedalEnabled?: (id: string) => void;
   onUpsertMedal?: (def: any) => void;
   onDeleteMedal?: (id: string) => void;
@@ -126,6 +133,12 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
   onUpdateUserPoints,
   onDeleteTask,
   onUpdateTheme,
+  onUpdateHabitBoardSize,
+  onToggleHabit,
+  onUpsertHabit,
+  onDeleteHabit,
+  onUpdatePomodoro,
+  onUpdatePromises,
   onToggleMedalEnabled,
   onUpsertMedal,
   onDeleteMedal,
@@ -139,8 +152,17 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
 
   // Tabs
   const [activeTab, setActiveTab] = useState<
-    'users' | 'notebook' | 'store' | 'approvals' | 'scoring' | 'import' | 'cities' | 'config' | 'history' | 'medals'
+    'users' | 'notebook' | 'store' | 'approvals' | 'scoring' | 'import' | 'cities' | 'config' | 'history' | 'medals' | 'habits' | 'informe' | 'promises'
   >('users');
+
+  // Theme-aware styles — ahora sí cambia visualmente
+  const theme = state.settings?.theme || 'dark';
+  const isLight = theme === 'light';
+  const isSemi = theme === 'semi';
+  const dashOuterBg = isLight ? 'bg-stone-200' : isSemi ? 'bg-[#1c1917]' : 'bg-slate-950';
+  const dashInnerBg = isLight ? 'bg-stone-50 text-slate-900' : isSemi ? 'bg-[#292524] text-stone-100' : 'bg-slate-900 text-slate-100';
+  const sidebarBg = isLight ? 'bg-stone-100 border-stone-300' : isSemi ? 'bg-[#1c1917] border-amber-900/30' : 'bg-slate-950 border-slate-800';
+  const contentBg = isLight ? 'bg-stone-50/60' : isSemi ? 'bg-[#292524]/60' : 'bg-slate-900/60';
 
   // Reward editor state
   const [editingReward, setEditingReward] = useState<StoreItem | null | undefined>(undefined); // undefined = closed, null = new
@@ -183,6 +205,11 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
   const [editWisdomPoints, setEditWisdomPoints] = useState(0);
   const [editLifePoints, setEditLifePoints] = useState(0);
   const [editCoins, setEditCoins] = useState(0);
+
+  // Hábitos - form state
+  const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
+  const [habitForm, setHabitForm] = useState<HabitDefinition>({ id: '', title: '', description: '', icon: '⭐', points: 5, goalType: 'daily', goalCount: 1, enabled: true });
+  const [showHabitForm, setShowHabitForm] = useState(false);
 
   // Mission Notebook Tab state
   const [nbMateria, setNbMateria] = useState<string>(isKinder ? KINDER_MATERIA.id : 'matematicas');
@@ -537,12 +564,12 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
 
   // --- 2. AUTHENTICATED PARENT DASHBOARD — PANTALLA COMPLETA para trabajar cómodo ---
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col animate-fade-in select-none">
-      <div className="relative w-full h-full flex flex-col bg-slate-900 text-slate-100 overflow-hidden font-sans">
+    <div className={`fixed inset-0 z-50 flex flex-col animate-fade-in select-none ${dashOuterBg}`}>
+      <div className={`relative w-full h-full flex flex-col overflow-hidden font-sans ${dashInnerBg}`}>
         {/* Layout vertical: sidebar + contenido con scroll interno */}
         <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
           {/* Sidebar vertical — todos los menús visibles, sin scroll horizontal */}
-          <aside className="w-full md:w-64 shrink-0 bg-slate-950 border-b md:border-b-0 md:border-r border-slate-800 flex md:flex-col gap-1.5 p-3 overflow-x-auto md:overflow-y-auto md:overflow-x-hidden">
+          <aside className={`w-full md:w-64 shrink-0 border-b md:border-b-0 md:border-r flex md:flex-col gap-1.5 p-3 overflow-x-auto md:overflow-y-auto md:overflow-x-hidden ${sidebarBg}`}>
             {/* Header solo sobre sidebar, bien a la izquierda y fuera del cuerpo */}
             <div className="flex items-center justify-between bg-slate-900 border border-amber-500/30 rounded-xl px-3 py-2 mb-2 shrink-0">
               <div className="flex items-center gap-1.5">
@@ -567,6 +594,9 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
               { id: 'approvals', label: `Aprobaciones (${submittedTasks.length})`, icon: CheckCircle2, active: 'bg-emerald-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'scoring', label: 'Puntaje', icon: Award, active: 'bg-teal-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'medals', label: 'Álbum de Medallas', icon: Sparkles, active: 'bg-amber-600 text-slate-950 shadow', idle: 'text-slate-300 hover:bg-slate-800' },
+              { id: 'habits', label: 'Hábitos y Premios Especiales', icon: Heart, active: 'bg-emerald-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
+              { id: 'informe', label: 'ESTADISTICAS DEL NIÑO/A', icon: FileText, active: 'bg-sky-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
+              { id: 'promises', label: 'Promesas de Dios', icon: BookOpen, active: 'bg-amber-600 text-slate-950 shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'import', label: 'Carga Masiva (.TXT)', icon: UploadCloud, active: 'bg-indigo-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'cities', label: 'Desbloquear Ciudades', icon: Unlock, active: 'bg-cyan-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'config', label: 'Ajustes & PIN', icon: Settings, active: 'bg-slate-700 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
@@ -589,7 +619,7 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
           </aside>
 
           {/* Contenido — scroll vertical único */}
-          <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-5 bg-slate-900/60 space-y-4">
+          <div className={`flex-1 min-h-0 overflow-y-auto p-4 md:p-5 space-y-4 ${contentBg}`}>
           {/* ========================================================================= */}
           {/* TAB 1: GESTIÓN MULTI-USUARIO Y PERSONALIZACIÓN DE AVATAR */}
           {/* ========================================================================= */}
@@ -928,6 +958,21 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
                             <div className="bg-slate-900/80 rounded-xl p-1.5">
                               <span className="text-[9px] text-amber-400 block font-bold">Monedas</span>
                               <span className="font-black text-white">{prof.coins} 🪙</span>
+                            </div>
+                          </div>
+                          {/* Pomodoro por niño - LEON */}
+                          <div className="mt-2 bg-amber-950/30 border border-amber-700/40 rounded-xl p-2 flex items-center justify-between gap-2">
+                            <span className="text-[11px] font-black text-amber-300 flex items-center gap-1">🐶 LEON Pomodoro</span>
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="number"
+                                min={5}
+                                max={60}
+                                value={(prof as any).pomodoroMinutes ?? 20}
+                                onChange={(e) => onUpdatePomodoro && onUpdatePomodoro(prof.id, parseInt(e.target.value) || 20)}
+                                className="w-14 text-xs p-1 rounded-lg bg-slate-950 border border-amber-700 text-white font-mono font-bold text-center"
+                              />
+                              <span className="text-[10px] text-slate-400">min</span>
                             </div>
                           </div>
 
@@ -1851,6 +1896,183 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
           )}
 
           {/* ========================================================================= */}
+          {/* TAB: HÁBITOS Y PREMIOS ESPECIALES */}
+          {/* ========================================================================= */}
+          {activeTab === 'habits' && (
+            <div className="space-y-4">
+              <div className="bg-emerald-950/40 border border-emerald-500/40 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <h4 className="text-sm font-black text-emerald-300 flex items-center gap-2"><Heart className="w-5 h-5 text-emerald-400" /> Hábitos y Premios Especiales</h4>
+                  <p className="text-xs text-slate-400 mt-1">Definí hábitos diarios/semanales/mensuales. El niño los marca desde el cuadro HABITOS en su Casa. % cumplimiento = promedio completed/total.</p>
+                </div>
+                <button
+                  onClick={() => { setHabitForm({ id: '', title: '', description: '', icon: '⭐', points: 5, goalType: 'daily', goalCount: 1, enabled: true }); setEditingHabitId(null); setShowHabitForm(true); }}
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" /> + Nuevo Hábito
+                </button>
+              </div>
+
+              {showHabitForm && (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const def: HabitDefinition = { ...habitForm, id: editingHabitId || `habit-${Date.now()}` };
+                    if (onUpsertHabit) onUpsertHabit(def);
+                    setShowHabitForm(false); setEditingHabitId(null);
+                  }}
+                  className="bg-slate-800 border-2 border-emerald-500/80 rounded-2xl p-4 space-y-3 animate-in fade-in"
+                >
+                  <div className="flex items-center justify-between border-b border-slate-700 pb-2">
+                    <span className="text-xs font-black text-emerald-300 uppercase">{editingHabitId ? 'Editar Hábito' : 'Nuevo Hábito'}</span>
+                    <button type="button" onClick={() => { setShowHabitForm(false); setEditingHabitId(null); }} className="text-xs text-slate-400 hover:text-white">Cancelar</button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-2">
+                      <label className="text-[11px] font-bold text-slate-300 block mb-1">Título:</label>
+                      <input type="text" value={habitForm.title} onChange={(e) => setHabitForm({ ...habitForm, title: e.target.value })} className="w-full text-xs p-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-bold" required />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-300 block mb-1">Icono:</label>
+                      <input type="text" value={habitForm.icon} onChange={(e) => setHabitForm({ ...habitForm, icon: e.target.value })} className="w-full text-xs p-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-bold" placeholder="⭐" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-300 block mb-1">Puntos vida:</label>
+                      <input type="number" min={1} max={50} value={habitForm.points} onChange={(e) => setHabitForm({ ...habitForm, points: parseInt(e.target.value) || 5 })} className="w-full text-xs p-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-bold" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-300 block mb-1">Meta tipo:</label>
+                      <select value={habitForm.goalType} onChange={(e) => setHabitForm({ ...habitForm, goalType: e.target.value as any })} className="w-full text-xs p-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-bold">
+                        <option value="daily">Diaria</option>
+                        <option value="weekly">Semanal</option>
+                        <option value="monthly">Mensual</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-300 block mb-1">Veces por período:</label>
+                      <input type="number" min={1} max={30} value={habitForm.goalCount} onChange={(e) => setHabitForm({ ...habitForm, goalCount: parseInt(e.target.value) || 1 })} className="w-full text-xs p-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-bold" />
+                    </div>
+                    <div className="sm:col-span-3">
+                      <label className="text-[11px] font-bold text-slate-300 block mb-1">Descripción:</label>
+                      <input type="text" value={habitForm.description || ''} onChange={(e) => setHabitForm({ ...habitForm, description: e.target.value })} className="w-full text-xs p-2 rounded-xl bg-slate-950 border border-slate-700 text-white" placeholder="Opcional" />
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <button type="submit" className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow cursor-pointer">Guardar Hábito</button>
+                  </div>
+                </form>
+              )}
+
+              <div className="space-y-2">
+                <div className="text-xs text-slate-400 font-bold px-1">Hábitos definidos: {state.habitDefinitions.length}</div>
+                {state.habitDefinitions.length === 0 ? (
+                  <div className="p-6 text-center bg-slate-800/40 rounded-2xl border border-dashed border-slate-700 text-sm text-slate-400">No hay hábitos. Creá el primero arriba.</div>
+                ) : (
+                  <div className="grid gap-2">
+                    {state.habitDefinitions.map((h) => {
+                      const compliance = getHabitCompliance(state, h.id);
+                      const isEditing = editingHabitId === h.id;
+                      return (
+                        <div key={h.id} className={`p-3 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${h.enabled ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-950/60 border-slate-800 opacity-70'}`}>
+                          <div className="flex-1">
+                            <div className="text-xs font-black text-white flex items-center gap-2"><span>{h.icon}</span> {h.title} <span className="text-[10px] text-amber-300">+{h.points} vida</span> {!h.enabled && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-700 text-slate-400">deshabilitado</span>}</div>
+                            <div className="text-[11px] text-slate-400">{h.description} — {h.goalType === 'daily' ? `Diaria ${h.goalCount}/día` : h.goalType === 'weekly' ? `Semanal ${h.goalCount}/semana` : `Mensual ${h.goalCount}/mes`}</div>
+                            <div className="text-[11px] text-slate-500">Cumplimiento: <span className="font-black text-emerald-400">{compliance}%</span></div>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button onClick={() => onToggleHabit && onToggleHabit(h.id)} className="px-2.5 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-[11px] font-bold cursor-pointer">MARCAR COMO LISTA</button>
+                            <button onClick={() => { setHabitForm({ ...h }); setEditingHabitId(h.id); setShowHabitForm(true); }} className="p-1.5 text-slate-400 hover:text-amber-300 rounded-lg hover:bg-slate-700 cursor-pointer"><Edit3 className="w-4 h-4" /></button>
+                            <button onClick={() => { if (onUpsertHabit) onUpsertHabit({ ...h, enabled: !h.enabled }); }} className={`p-1.5 rounded-lg cursor-pointer ${h.enabled ? 'text-emerald-400 hover:bg-slate-700' : 'text-slate-500 hover:bg-slate-700'}`} title="Activar/Desactivar"><Check className="w-4 h-4" /></button>
+                            <button onClick={() => { if (confirm(`Eliminar hábito "${h.title}"?` ) && onDeleteHabit) onDeleteHabit(h.id); }} className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-700 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* TAB: ESTADISTICAS DEL NIÑO/A */}
+          {/* ========================================================================= */}
+          {activeTab === 'informe' && (
+            <div className="space-y-4">
+              <div className="bg-sky-950/40 border border-sky-500/40 rounded-2xl p-4">
+                <h4 className="text-sm font-black text-sky-300 flex items-center gap-2"><FileText className="w-5 h-5 text-sky-400" /> ESTADISTICAS DEL NIÑO/A</h4>
+                <p className="text-xs text-slate-400 mt-1">Resumen de juego, premios y ranking por materia.</p>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-3 text-center">
+                  <div className="text-[11px] text-slate-400 font-bold">Tiempo total</div>
+                  <div className="text-lg font-black text-white">{state.playStats?.totalMinutes ?? 0} min</div>
+                </div>
+                <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-3 text-center">
+                  <div className="text-[11px] text-emerald-400 font-bold">Juego activo</div>
+                  <div className="text-lg font-black text-white">{state.playStats?.activeMinutes ?? 0} min</div>
+                </div>
+                <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-3 text-center">
+                  <div className="text-[11px] text-amber-400 font-bold">Premios ganados</div>
+                  <div className="text-lg font-black text-white">{state.rewardRedemptions?.length ?? 0}</div>
+                </div>
+                <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-3 text-center">
+                  <div className="text-[11px] text-purple-400 font-bold">Tareas aprobadas</div>
+                  <div className="text-lg font-black text-white">{state.tasks.filter(t => t.status==='approved' && (!t.userId || t.userId===state.activeUserId)).length}</div>
+                </div>
+              </div>
+              <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4">
+                <h5 className="text-xs font-black text-slate-200 mb-2">Ranking por materia (puntos aprobados)</h5>
+                {(() => {
+                  const map = new Map<string, { w: number; l: number; c: number }>();
+                  for (const t of state.tasks.filter(t => t.status==='approved' && (!t.userId || t.userId===state.activeUserId))) {
+                    const cur = map.get(t.materiaId) || { w: 0, l: 0, c: 0 };
+                    if (t.type==='sabiduria') cur.w += t.points; else cur.l += t.points;
+                    cur.c += 1;
+                    map.set(t.materiaId, cur);
+                  }
+                  const rows = Array.from(map.entries()).sort((a,b)=> (b[1].w+b[1].l)-(a[1].w+a[1].l));
+                  if (rows.length===0) return <div className="text-xs text-slate-500">Aún no hay tareas aprobadas.</div>;
+                  return (
+                    <table className="w-full text-xs">
+                      <thead><tr className="text-[10px] text-slate-400"><th className="text-left p-1">Materia</th><th className="text-center p-1">Sabiduría</th><th className="text-center p-1">Vida</th><th className="text-center p-1">Tareas</th></tr></thead>
+                      <tbody>
+                        {rows.map(([mid, v]) => {
+                          const mat = MATERIAS.find(m=>m.id===mid) || { shortName: mid, color: '#64748b' } as any;
+                          return <tr key={mid} className="border-t border-slate-700"><td className="p-1 font-bold text-white">{mat.shortName}</td><td className="p-1 text-center text-cyan-400">{v.w}</td><td className="p-1 text-center text-emerald-400">{v.l}</td><td className="p-1 text-center text-slate-300">{v.c}</td></tr>;
+                        })}
+                      </tbody>
+                    </table>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* TAB: PROMESAS DE DIOS */}
+          {/* ========================================================================= */}
+          {activeTab === 'promises' && (
+            <div className="space-y-4">
+              <div className="bg-amber-950/40 border border-amber-500/40 rounded-2xl p-4">
+                <h4 className="text-sm font-black text-amber-300 flex items-center gap-2"><BookOpen className="w-5 h-5 text-amber-400" /> Promesas de Dios</h4>
+                <p className="text-xs text-slate-400 mt-1">Bloc de notas: escribí un versículo por línea. Se muestran aleatoriamente cuando el niño completa una semana. Por defecto hay 30 promesas bíblicas.</p>
+              </div>
+              <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-2">
+                <label className="text-xs font-bold text-slate-300 block">Versículos (uno por línea):</label>
+                <textarea
+                  rows={12}
+                  value={(state.promises || []).join('\n')}
+                  onChange={(e) => onUpdatePromises && onUpdatePromises(e.target.value.split('\n'))}
+                  className="w-full text-xs p-3 rounded-xl bg-slate-950 border border-slate-700 text-white font-serif leading-relaxed"
+                  placeholder="Josué 1:9 – ...&#10;Salmo 23:4 – ..."
+                />
+                <div className="text-[11px] text-slate-500">Total: {(state.promises||[]).length} promesas guardadas.</div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
           {/* TAB 8: AJUSTES GENERALES, KILOMETRAJES Y CAMBIO DE PIN */}
           {/* ========================================================================= */}
           {activeTab === 'config' && (
@@ -1879,6 +2101,40 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
                       {state.settings.theme === t.id && <div className="text-[10px] font-bold text-emerald-400 mt-1">✓ Activo</div>}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* Tamaño Cuadro HABITOS (140x72 configurable) */}
+              <div className="bg-slate-800/80 border border-emerald-500/40 rounded-2xl p-4 space-y-3">
+                <h4 className="text-sm font-black text-emerald-300 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-emerald-600 flex items-center justify-center text-[10px]">HB</span>
+                  <span>Cuadro HABITOS — Tamaño (px)</span>
+                  <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-slate-700 text-slate-300 border border-slate-600">{state.settings.habitBoardWidth} × {state.settings.habitBoardHeight}</span>
+                </h4>
+                <p className="text-xs text-slate-400">Ajustá el tamaño del cuadro en la pared de la Casa. Rango: Ancho 80-260, Alto 40-160. Se guarda automáticamente.</p>
+                <div className="grid grid-cols-2 gap-3 max-w-sm">
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 block mb-1">Ancho (80-260):</label>
+                    <input
+                      type="number"
+                      min={80}
+                      max={260}
+                      value={state.settings.habitBoardWidth}
+                      onChange={(e) => onUpdateHabitBoardSize && onUpdateHabitBoardSize(parseInt(e.target.value) || 140, state.settings.habitBoardHeight)}
+                      className="w-full text-xs p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 block mb-1">Alto (40-160):</label>
+                    <input
+                      type="number"
+                      min={40}
+                      max={160}
+                      value={state.settings.habitBoardHeight}
+                      onChange={(e) => onUpdateHabitBoardSize && onUpdateHabitBoardSize(state.settings.habitBoardWidth, parseInt(e.target.value) || 72)}
+                      className="w-full text-xs p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono font-bold"
+                    />
+                  </div>
                 </div>
               </div>
 
