@@ -3778,122 +3778,129 @@ export class PixelArtRenderer {
 
   // 4. Escritorio creativo e interactivo
   private renderKidDesk(ctx: CanvasRenderingContext2D, x: number, y: number, isGirl?: boolean) {
-    const w = 98;
-    const h = 70;
+    // 50% larger: 98x70 -> 147x105, scale=1.5
+    const scale = 1.5;
+    const w = Math.round(98 * scale);
+    const h = Math.round(70 * scale);
+    const s = (n: number) => Math.round(n * scale);
 
     // Ground Shadow
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-    ctx.fillRect(x + 2, y + h - 4, w + 6, 10);
+    ctx.fillRect(x + s(2), y + h - s(4), w + s(6), s(10));
 
     // Wooden Desk Legs & Frame
     ctx.fillStyle = isGirl ? '#581c87' : '#78350f';
-    ctx.fillRect(x + 4, y + 18, 8, h - 18);
-    ctx.fillRect(x + w - 12, y + 18, 8, h - 18);
+    ctx.fillRect(x + s(4), y + s(18), s(8), h - s(18));
+    ctx.fillRect(x + w - s(12), y + s(18), s(8), h - s(18));
     ctx.fillStyle = isGirl ? '#86198f' : '#92400e';
-    ctx.fillRect(x + 12, y + 24, w - 24, 6);
+    ctx.fillRect(x + s(12), y + s(24), w - s(24), s(6));
 
     // Desk Drawers Unit on Left
     ctx.fillStyle = isGirl ? '#a21caf' : '#b45309';
-    ctx.fillRect(x + 4, y + 26, 26, h - 26);
+    ctx.fillRect(x + s(4), y + s(26), s(26), h - s(26));
     ctx.fillStyle = isGirl ? '#701a75' : '#78350f';
-    ctx.fillRect(x + 6, y + 28, 22, 16);
-    ctx.fillRect(x + 6, y + 46, 22, 16);
+    ctx.fillRect(x + s(6), y + s(28), s(22), s(16));
+    ctx.fillRect(x + s(6), y + s(46), s(22), s(16));
     // Brass Knobs
     ctx.fillStyle = '#fde047';
-    ctx.fillRect(x + 15, y + 35, 4, 3);
-    ctx.fillRect(x + 15, y + 53, 4, 3);
+    ctx.fillRect(x + s(15), y + s(35), s(4), s(3));
+    ctx.fillRect(x + s(15), y + s(53), s(4), s(3));
 
     // Desk Top Board
     ctx.fillStyle = isGirl ? '#c084fc' : '#d97706';
-    ctx.fillRect(x, y + 12, w, 8);
+    ctx.fillRect(x, y + s(12), w, s(8));
     ctx.fillStyle = isGirl ? '#e9d5ff' : '#f59e0b';
-    ctx.fillRect(x, y + 12, w, 2);
+    ctx.fillRect(x, y + s(12), w, s(2));
 
-    // Desktop Monitor
-    const mx = x + 36;
-    const my = y - 16;
+    // Desktop Monitor - 50% larger and with HABITOS text
+    const mx = x + s(36);
+    const my = y - s(16);
     ctx.fillStyle = '#334155';
-    ctx.fillRect(mx + 12, my + 24, 8, 6);
-    ctx.fillRect(mx + 8, my + 28, 16, 2);
+    ctx.fillRect(mx + s(12), my + s(24), s(8), s(6));
+    ctx.fillRect(mx + s(8), my + s(28), s(16), s(2));
     ctx.fillStyle = '#0f172a';
     ctx.beginPath();
-    ctx.roundRect(mx, my, 32, 24, 3);
+    ctx.roundRect(mx, my, s(32), s(24), s(3));
     ctx.fill();
     ctx.fillStyle = isGirl ? '#db2777' : '#0284c7';
-    ctx.fillRect(mx + 2, my + 2, 28, 18);
-    ctx.fillStyle = '#fde047';
-    ctx.fillRect(mx + 12, my + 8, 4, 4);
+    ctx.fillRect(mx + s(2), my + s(2), s(28), s(18));
+    // HABITOS label centered on monitor screen
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(mx + 18, my + 10, 8, 3);
+    ctx.font = `900 ${s(8)}px "Plus Jakarta Sans", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('HABITOS', mx + s(16), my + s(11));
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
 
-    // Keyboard & Mousepad
+    // Keyboard & Mousepad - scaled
     ctx.fillStyle = '#1e293b';
-    ctx.fillRect(mx - 2, y + 13, 22, 4);
+    ctx.fillRect(mx - s(2), y + s(13), s(22), s(4));
     ctx.fillStyle = isGirl ? '#f472b6' : '#38bdf8';
-    ctx.fillRect(mx + 22, y + 13, 8, 5);
+    ctx.fillRect(mx + s(22), y + s(13), s(8), s(5));
     ctx.fillStyle = '#fde047';
-    ctx.fillRect(mx + 24, y + 14, 4, 3);
+    ctx.fillRect(mx + s(24), y + s(14), s(4), s(3));
 
-    // Desk Lamp
-    const lx = x + w - 24;
-    const ly = y - 4;
+    // Desk Lamp - scaled
+    const lx = x + w - s(24);
+    const ly = y - s(4);
     ctx.fillStyle = isGirl ? '#ec4899' : '#eab308';
-    ctx.fillRect(lx + 4, y + 12, 10, 2);
+    ctx.fillRect(lx + s(4), y + s(12), s(10), s(2));
     ctx.strokeStyle = isGirl ? '#be185d' : '#ca8a04';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = s(2);
     ctx.beginPath();
-    ctx.moveTo(lx + 9, y + 12);
-    ctx.lineTo(lx + 4, ly + 6);
-    ctx.lineTo(lx + 12, ly);
+    ctx.moveTo(lx + s(9), y + s(12));
+    ctx.lineTo(lx + s(4), ly + s(6));
+    ctx.lineTo(lx + s(12), ly);
     ctx.stroke();
     ctx.fillStyle = isGirl ? '#f472b6' : '#fde047';
     ctx.beginPath();
-    ctx.arc(lx + 10, ly, 6, Math.PI * 0.7, Math.PI * 1.8);
+    ctx.arc(lx + s(10), ly, s(6), Math.PI * 0.7, Math.PI * 1.8);
     ctx.fill();
 
     // Warm Light Cone
-    const lampGrad = ctx.createRadialGradient(lx + 10, ly + 2, 2, lx + 10, ly + 14, 24);
+    const lampGrad = ctx.createRadialGradient(lx + s(10), ly + s(2), s(2), lx + s(10), ly + s(14), s(24));
     lampGrad.addColorStop(0, 'rgba(254, 240, 138, 0.4)');
     lampGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
     ctx.fillStyle = lampGrad;
     ctx.beginPath();
-    ctx.arc(lx + 10, ly + 14, 22, 0, Math.PI);
+    ctx.arc(lx + s(10), ly + s(14), s(22), 0, Math.PI);
     ctx.fill();
 
-    // Colored Pencils Cup
-    const pxCup = x + 16;
-    const pyCup = y + 4;
+    // Colored Pencils Cup - scaled
+    const pxCup = x + s(16);
+    const pyCup = y + s(4);
     ctx.fillStyle = isGirl ? '#ec4899' : '#06b6d4';
-    ctx.fillRect(pxCup, pyCup + 4, 10, 10);
-    ctx.fillStyle = '#ef4444'; ctx.fillRect(pxCup + 2, pyCup, 2, 6);
-    ctx.fillStyle = '#22c55e'; ctx.fillRect(pxCup + 5, pyCup - 2, 2, 8);
-    ctx.fillStyle = '#eab308'; ctx.fillRect(pxCup + 8, pyCup + 1, 2, 5);
+    ctx.fillRect(pxCup, pyCup + s(4), s(10), s(10));
+    ctx.fillStyle = '#ef4444'; ctx.fillRect(pxCup + s(2), pyCup, s(2), s(6));
+    ctx.fillStyle = '#22c55e'; ctx.fillRect(pxCup + s(5), pyCup - s(2), s(2), s(8));
+    ctx.fillStyle = '#eab308'; ctx.fillRect(pxCup + s(8), pyCup + s(1), s(2), s(5));
 
-    // Open Sketchbook
+    // Open Sketchbook - scaled
     ctx.fillStyle = '#f8fafc';
-    ctx.fillRect(x + 68, y + 13, 14, 6);
+    ctx.fillRect(x + s(68), y + s(13), s(14), s(6));
     ctx.fillStyle = '#ec4899';
-    ctx.fillRect(x + 70, y + 14, 4, 2);
+    ctx.fillRect(x + s(70), y + s(14), s(4), s(2));
 
-    // Swivel Chair
-    const cxChair = x + 44;
-    const cyChair = y + 26;
+    // Swivel Chair - scaled
+    const cxChair = x + s(44);
+    const cyChair = y + s(26);
     ctx.fillStyle = isGirl ? '#be185d' : '#1d4ed8';
     ctx.beginPath();
-    ctx.roundRect(cxChair, cyChair + 4, 22, 18, 4);
+    ctx.roundRect(cxChair, cyChair + s(4), s(22), s(18), s(4));
     ctx.fill();
     ctx.fillStyle = isGirl ? '#f472b6' : '#3b82f6';
-    ctx.fillRect(cxChair + 2, cyChair + 6, 18, 14);
+    ctx.fillRect(cxChair + s(2), cyChair + s(6), s(18), s(14));
 
     ctx.fillStyle = isGirl ? '#9d174d' : '#1e40af';
     ctx.beginPath();
-    ctx.roundRect(cxChair - 2, cyChair + 22, 26, 8, 3);
+    ctx.roundRect(cxChair - s(2), cyChair + s(22), s(26), s(8), s(3));
     ctx.fill();
 
     ctx.fillStyle = '#475569';
-    ctx.fillRect(cxChair + 9, cyChair + 30, 4, 10);
+    ctx.fillRect(cxChair + s(9), cyChair + s(30), s(4), s(10));
     ctx.fillStyle = '#0f172a';
-    ctx.fillRect(cxChair + 2, cyChair + 38, 18, 4);
+    ctx.fillRect(cxChair + s(2), cyChair + s(38), s(18), s(4));
   }
 
   // 5. Estantería infantil con libros coloridos y juguetes

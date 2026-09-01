@@ -47,9 +47,21 @@ import { HabitsBoard } from './components/HabitsBoard';
 import { LeonPomodoro } from './components/LeonPomodoro';
 import { MATERIAS, KINDER_MATERIA } from './data/constants';
 import { sound } from './services/audio';
+import { FamilyGate, FamilyBadge } from './components/FamilyGate';
+import { SuperAdminPanel } from './components/SuperAdminPanel';
+import { getFamilyCode, clearFamilyCode, getSyncIntervalMinutes, setSyncIntervalMinutes, isLeonFamily } from './services/family';
+import { isSupabaseConfigured } from './services/supabase';
+import { syncStateToCloud, loadStateFromCloud, schedulePeriodicSync } from './services/cloudSync';
 
 export default function App() {
-  const [state, setState] = useState<AppState>(loadAppState);
+  const [familyCode, setFamilyCodeState] = useState<string | null>(() => getFamilyCode());
+  const [cloudStatus, setCloudStatus] = useState<string>('');
+  const [showSuperAdmin, setShowSuperAdmin] = useState(false);
+  const [syncInterval, setSyncIntervalState] = useState<number>(() => getSyncIntervalMinutes());
+  const [state, setState] = useState<AppState>(() => {
+    const local = loadAppState();
+    return local;
+  });
 
   // Active Modals
   const [showNotebook, setShowNotebook] = useState(false);
@@ -79,6 +91,40 @@ export default function App() {
       setActiveSec(0);
     }
   }, [sessionSec, activeSec]);
+
+  // Load from cloud on familyCode change
+  useEffect(() => {
+    if (!familyCode || !isSupabaseConfigured()) return;
+    let cancelled = false;
+    (async () => {
+      setCloudStatus('Cargando nube...');
+      const { state: cloudState, error } = await loadStateFromCloud();
+      if (!cancelled && cloudState) {
+        setState(cloudState);
+        saveAppState(cloudState);
+        setCloudStatus('Sincronizado ✓');
+        setTimeout(() => setCloudStatus(''), 2000);
+      } else if (!cancelled && error && error.includes('Could not find the table')) {
+        setCloudStatus('Ejecuta supabase_schema.sql en Supabase');
+      } else if (!cancelled) {
+        // No cloud data yet -> push local
+        const res = await syncStateToCloud(state);
+        if (!cancelled) setCloudStatus(res.ok ? 'Subido a nube ✓' : `Error: ${res.error}`);
+        setTimeout(() => setCloudStatus(''), 3000);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [familyCode]);
+
+  // Periodic sync
+  useEffect(() => {
+    if (!familyCode || !isSupabaseConfigured()) return;
+    const cleanup = schedulePeriodicSync(() => state, (ok, msg) => {
+      setCloudStatus(ok ? `Sync ${new Date().toLocaleTimeString()} ✓` : `Sync error: ${msg}`);
+      setTimeout(() => setCloudStatus(''), 3000);
+    });
+    return cleanup;
+  }, [familyCode, syncInterval, state]);
 
   // Synchronize state changes to localStorage and audio volume
   useEffect(() => {
@@ -459,12 +505,65 @@ export default function App() {
 
   const themeBg = state.settings.theme === 'light' ? 'bg-stone-100 text-slate-900' : state.settings.theme === 'semi' ? 'bg-[#1c1917] text-stone-100' : 'bg-slate-950 text-slate-100';
   const themeRoot = state.settings.theme === 'light' ? 'light' : state.settings.theme === 'semi' ? 'semi' : 'dark';
+
+  const handleFamilyEnter = (code: string) => {
+    setFamilyCodeState(code);
+    setCloudStatus('Familia ' + code + ' ✓');
+    setTimeout(() => setCloudStatus(''), 2000);
+  };
+  const handleFamilySwitch = () => {
+    clearFamilyCode();
+    setFamilyCodeState(null);
+  };
+  const handleSyncNow = async () => {
+    setCloudStatus('Sincronizando...');
+    const res = await syncStateToCloud(state);
+    setCloudStatus(res.ok ? 'Sincronizado ✓' : `Error: ${res.error}`);
+    setTimeout(() => setCloudStatus(''), 3000);
+  };
+  const handleSyncIntervalChange = (m: number) => {
+    setSyncIntervalMinutes(m);
+    setSyncIntervalState(m);
+    setCloudStatus(`Sync cada ${m} min`);
+    setTimeout(() => setCloudStatus(''), 2000);
+  };
+
+  if (!familyCode) {
+    return <FamilyGate onEnter={handleFamilyEnter} />;
+  }
+
   return (
     <div className={`h-screen w-screen flex flex-col items-center justify-center select-none font-sans overflow-hidden relative p-0 m-0 ${themeBg}`} data-theme={themeRoot}>
       {/* Timer minimalista siempre visible */}
       <div className="absolute top-2 left-1/2 -translate-x-1/2 z-40 bg-slate-950/85 border border-slate-700 rounded-full px-2.5 py-0.5 text-xs font-mono text-slate-200 backdrop-blur select-none pointer-events-none">
         {formatSession(sessionSec)}
       </div>
+      {/* Family badge + sync controls */}
+      <div className="absolute top-2 right-2 z-40 flex items-center gap-2">
+        <FamilyBadge familyCode={familyCode} onSwitch={handleFamilySwitch} />
+        {isSupabaseConfigured() && (
+          <>
+            <button onClick={handleSyncNow} className="px-2 py-1 rounded-full bg-emerald-700 hover:bg-emerald-600 border border-emerald-600 text-white text-[11px] font-bold cursor-pointer" title="Sincronizar ahora">↻ Sync</button>
+            {isLeonFamily(familyCode) && (
+              <button onClick={() => setShowSuperAdmin(true)} className="px-2 py-1 rounded-full bg-violet-700 hover:bg-violet-600 border border-violet-500 text-white text-[11px] font-black cursor-pointer" title="SUPERADMIN (uruguay)">🛡️ SUPERADMIN</button>
+            )}
+          </>
+        )}
+      </div>
+      {cloudStatus && (
+        <div className="absolute top-10 right-2 z-40 bg-slate-900 border border-slate-700 rounded-full px-3 py-1 text-[11px] text-slate-300">
+          {cloudStatus}
+        </div>
+      )}
+      {/* Sync interval selector - visible in header area */}
+      {isSupabaseConfigured() && (
+        <div className="absolute top-10 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 bg-slate-900/80 border border-slate-700 rounded-full px-2 py-0.5 text-[10px] text-slate-400">
+          <span>Sync cada</span>
+          {[5,15,30,60].map((m) => (
+            <button key={m} onClick={() => handleSyncIntervalChange(m)} className={`px-1.5 py-0.5 rounded-full font-bold cursor-pointer ${syncInterval===m ? 'bg-amber-500 text-slate-900' : 'bg-slate-800 text-slate-400'}`}>{m}m</button>
+          ))}
+        </div>
+      )}
       {/* Top Dynamic HUD with Menu, User Display and Sound Volume */}
       <HeaderHUD
         state={state}
@@ -609,6 +708,10 @@ export default function App() {
           onPurchaseItem={handlePurchaseItem}
           onEquipAccessory={handleEquipAccessory}
         />
+      )}
+
+      {showSuperAdmin && (
+        <SuperAdminPanel onClose={() => setShowSuperAdmin(false)} />
       )}
     </div>
   );
