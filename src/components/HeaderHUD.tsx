@@ -315,8 +315,8 @@ export const HeaderHUD: React.FC<HeaderHUDProps> = ({
         </div>
       </div>
 
-      {/* Top Right: Dual Audio Volume Control Popup */}
-      <div className="absolute top-3 right-16 z-40 select-none">
+      {/* Top Right: Dual Audio - oculto del niño, ahora en GameCanvas vertical (abajo de maximizar) */}
+      <div className="hidden absolute top-3 right-16 z-40 select-none">
         <div className="relative">
           <button
             id="hud-volume-btn"

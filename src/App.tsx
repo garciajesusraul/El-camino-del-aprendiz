@@ -27,6 +27,8 @@ import {
   updateTheme,
   updateHabitBoardSize,
   toggleHabitToday,
+  approveHabit,
+  rejectHabit,
   upsertHabitDefinition,
   deleteHabitDefinition,
   updatePomodoroMinutes,
@@ -71,26 +73,59 @@ export default function App() {
   const [showDailyPoints, setShowDailyPoints] = useState(false);
   const [showHabitsBoard, setShowHabitsBoard] = useState(false);
   const [showPromise, setShowPromise] = useState<string | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
   const [sessionSec, setSessionSec] = useState(0);
   const [activeSec, setActiveSec] = useState(0);
   const sessionStartRef = React.useRef<number>(Date.now());
   const isMovingRef = React.useRef(false);
+  const lastActiveRef = React.useRef<number>(Date.now());
 
-  // Timer minimalista siempre visible 00:20 + tracking total/active
+  // Timer + tracking total/active con pausa e idle >4min no cuenta
   useEffect(() => {
     const id = window.setInterval(() => {
+      if (isPaused) return;
       setSessionSec(Math.floor((Date.now() - sessionStartRef.current) / 1000));
-      if (isMovingRef.current) setActiveSec((prev) => prev + 1);
+      if (Date.now() - lastActiveRef.current > 240000) return;
+      if (isMovingRef.current) {
+        setActiveSec((prev) => prev + 1);
+        lastActiveRef.current = Date.now();
+      }
     }, 1000);
     return () => window.clearInterval(id);
-  }, []);
-  // Persist stats cada minuto
+  }, [isPaused]);
+  // Pausa BGM
   useEffect(() => {
+    if (isPaused) {
+      sound.stopBgm();
+    } else {
+      if (state.settings.musicEnabled && state.settings.musicVolume !== 0) {
+        sound.startBgm();
+      }
+    }
+  }, [isPaused, state.settings.musicEnabled, state.settings.musicVolume, state.currentScene, state.currentMateria]);
+  // Actualiza lastActive en cualquier interacción para idle
+  useEffect(() => {
+    const bump = () => { lastActiveRef.current = Date.now(); };
+    window.addEventListener('click', bump);
+    window.addEventListener('keydown', bump);
+    window.addEventListener('mousemove', bump);
+    window.addEventListener('touchstart', bump);
+    return () => {
+      window.removeEventListener('click', bump);
+      window.removeEventListener('keydown', bump);
+      window.removeEventListener('mousemove', bump);
+      window.removeEventListener('touchstart', bump);
+    };
+  }, []);
+  // Persist stats cada minuto (solo si no pausado y no idle)
+  useEffect(() => {
+    if (isPaused) return;
+    if (Date.now() - lastActiveRef.current > 240000) return;
     if (sessionSec > 0 && sessionSec % 60 === 0) {
       setState((prev) => incrementPlayStats(prev, 1, Math.floor(activeSec / 60)));
       setActiveSec(0);
     }
-  }, [sessionSec, activeSec]);
+  }, [sessionSec, activeSec, isPaused]);
 
   // Load from cloud on familyCode change
   useEffect(() => {
@@ -116,15 +151,16 @@ export default function App() {
     return () => { cancelled = true; };
   }, [familyCode]);
 
-  // Periodic sync
+  // Periodic sync - pausado no sincroniza
   useEffect(() => {
+    if (isPaused) return;
     if (!familyCode || !isSupabaseConfigured()) return;
     const cleanup = schedulePeriodicSync(() => state, (ok, msg) => {
       setCloudStatus(ok ? `Sync ${new Date().toLocaleTimeString()} ✓` : `Sync error: ${msg}`);
       setTimeout(() => setCloudStatus(''), 3000);
     });
     return cleanup;
-  }, [familyCode, syncInterval, state]);
+  }, [familyCode, syncInterval, state, isPaused]);
 
   // Synchronize state changes to localStorage and audio volume
   useEffect(() => {
@@ -397,6 +433,8 @@ export default function App() {
   const handleToggleHabit = (habitId: string) => {
     setState((prev) => toggleHabitToday(prev, habitId));
   };
+  const handleApproveHabit = (habitId: string, date?: string) => setState((prev) => approveHabit(prev, habitId, date));
+  const handleRejectHabit = (habitId: string, date?: string) => setState((prev) => rejectHabit(prev, habitId, date));
   const handleUpsertHabit = (def: any) => setState((prev) => upsertHabitDefinition(prev, def));
   const handleDeleteHabit = (habitId: string) => setState((prev) => deleteHabitDefinition(prev, habitId));
   const handleUpdatePomodoro = (userId: string, minutes: number) => setState((prev) => updatePomodoroMinutes(prev, userId, minutes));
@@ -527,6 +565,7 @@ export default function App() {
     setCloudStatus(`Sync cada ${m} min`);
     setTimeout(() => setCloudStatus(''), 2000);
   };
+  const handleTogglePause = () => setIsPaused((prev) => !prev);
 
   if (!familyCode) {
     return <FamilyGate onEnter={handleFamilyEnter} />;
@@ -534,34 +573,10 @@ export default function App() {
 
   return (
     <div className={`h-screen w-screen flex flex-col items-center justify-center select-none font-sans overflow-hidden relative p-0 m-0 ${themeBg}`} data-theme={themeRoot}>
-      {/* Timer minimalista siempre visible */}
-      <div className="absolute top-2 left-1/2 -translate-x-1/2 z-40 bg-slate-950/85 border border-slate-700 rounded-full px-2.5 py-0.5 text-xs font-mono text-slate-200 backdrop-blur select-none pointer-events-none">
-        {formatSession(sessionSec)}
-      </div>
-      {/* Family badge + sync controls */}
-      <div className="absolute top-2 right-2 z-40 flex items-center gap-2">
-        <FamilyBadge familyCode={familyCode} onSwitch={handleFamilySwitch} />
-        {isSupabaseConfigured() && (
-          <>
-            <button onClick={handleSyncNow} className="px-2 py-1 rounded-full bg-emerald-700 hover:bg-emerald-600 border border-emerald-600 text-white text-[11px] font-bold cursor-pointer" title="Sincronizar ahora">↻ Sync</button>
-            {isLeonFamily(familyCode) && (
-              <button onClick={() => setShowSuperAdmin(true)} className="px-2 py-1 rounded-full bg-violet-700 hover:bg-violet-600 border border-violet-500 text-white text-[11px] font-black cursor-pointer" title="SUPERADMIN (uruguay)">🛡️ SUPERADMIN</button>
-            )}
-          </>
-        )}
-      </div>
+      {/* Reloj, familia y sync solo en menú padre - ocultos del niño */}
       {cloudStatus && (
-        <div className="absolute top-10 right-2 z-40 bg-slate-900 border border-slate-700 rounded-full px-3 py-1 text-[11px] text-slate-300">
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-40 bg-slate-900 border border-slate-700 rounded-full px-3 py-1 text-[11px] text-slate-300">
           {cloudStatus}
-        </div>
-      )}
-      {/* Sync interval selector - visible in header area */}
-      {isSupabaseConfigured() && (
-        <div className="absolute top-10 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 bg-slate-900/80 border border-slate-700 rounded-full px-2 py-0.5 text-[10px] text-slate-400">
-          <span>Sync cada</span>
-          {[5,15,30,60].map((m) => (
-            <button key={m} onClick={() => handleSyncIntervalChange(m)} className={`px-1.5 py-0.5 rounded-full font-bold cursor-pointer ${syncInterval===m ? 'bg-amber-500 text-slate-900' : 'bg-slate-800 text-slate-400'}`}>{m}m</button>
-          ))}
         </div>
       )}
       {/* Top Dynamic HUD with Menu, User Display and Sound Volume */}
@@ -586,7 +601,9 @@ export default function App() {
           onOpenAdmin={() => setShowAdmin(true)}
           onUpdateVolume={handleUpdateVolume}
           onOpenHabitsBoard={() => setShowHabitsBoard(true)}
-          onActivity={(moving) => { isMovingRef.current = moving; }}
+          onActivity={(moving) => { isMovingRef.current = moving; if (moving) lastActiveRef.current = Date.now(); }}
+          isPaused={isPaused}
+          onTogglePause={handleTogglePause}
         />
       </main>
       {/* LEON perro marrón - bottom left, pomodoro 20 min por perfil */}
@@ -629,10 +646,19 @@ export default function App() {
           onUpdateTheme={handleUpdateTheme}
           onUpdateHabitBoardSize={handleUpdateHabitBoardSize}
           onToggleHabit={handleToggleHabit}
+          onApproveHabit={handleApproveHabit}
+          onRejectHabit={handleRejectHabit}
           onUpsertHabit={handleUpsertHabit}
           onDeleteHabit={handleDeleteHabit}
           onUpdatePomodoro={handleUpdatePomodoro}
           onUpdatePromises={handleUpdatePromises}
+          familyCode={familyCode}
+          syncInterval={syncInterval}
+          onSyncNow={handleSyncNow}
+          onSyncIntervalChange={handleSyncIntervalChange}
+          onFamilySwitch={handleFamilySwitch}
+          onOpenSuperAdmin={() => setShowSuperAdmin(true)}
+          cloudStatus={cloudStatus}
           onToggleMedalEnabled={handleToggleMedalEnabled}
           onUpsertMedal={handleUpsertMedal}
           onDeleteMedal={handleDeleteMedal}
@@ -710,7 +736,7 @@ export default function App() {
         />
       )}
 
-      {showSuperAdmin && (
+      {showSuperAdmin && isLeonFamily(familyCode) && (
         <SuperAdminPanel onClose={() => setShowSuperAdmin(false)} />
       )}
     </div>

@@ -32,12 +32,12 @@ export function getSyncIntervalMinutes(): number {
   try {
     const v = localStorage.getItem(SYNC_INTERVAL_KEY);
     const n = v ? parseInt(v, 10) : 30;
-    return [5, 15, 30, 60].includes(n) ? n : 30;
+    return [5, 10, 15, 30, 60].includes(n) ? n : 30;
   } catch { return 30; }
 }
 
 export function setSyncIntervalMinutes(minutes: number): void {
-  const allowed = [5, 15, 30, 60];
+  const allowed = [5, 10, 15, 30, 60];
   const m = allowed.includes(minutes) ? minutes : 30;
   localStorage.setItem(SYNC_INTERVAL_KEY, String(m));
 }

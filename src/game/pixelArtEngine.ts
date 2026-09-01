@@ -2188,9 +2188,10 @@ export class PixelArtRenderer {
     profile: ChildProfile
   ) {
     const isGirl = profile.gender === 'girl';
-    const pWidth = 32;
-    const pHeight = 40;
-    const px = x - 16;
+    // Más esbelto: menos gordo
+    const pWidth = 26;
+    const pHeight = 42;
+    const px = x - pWidth / 2;
     const py = y - 24;
 
     const walkBob = isWalking ? (animFrame % 2 === 1 ? -2 : 0) : 0;
@@ -2468,15 +2469,16 @@ export class PixelArtRenderer {
         ctx.fillStyle = "#fde047";
         ctx.fillRect(px + 3, py + 6 + walkBob, 2, 2);
         ctx.fillRect(px + pWidth - 5, py + 6 + walkBob, 2, 2);
+        // Ojos simétricos y boca centrada
         ctx.fillStyle = "#0f172a";
-        ctx.fillRect(px + 9, py + 9 + walkBob, 3, 3);
-        ctx.fillRect(px + 20, py + 9 + walkBob, 3, 3);
+        ctx.fillRect(px + pWidth / 2 - 5, py + 9 + walkBob, 3, 3);
+        ctx.fillRect(px + pWidth / 2 + 2, py + 9 + walkBob, 3, 3);
         ctx.fillStyle = "#ffffff";
-        ctx.fillRect(px + 10, py + 9 + walkBob, 1.5, 1.5);
-        ctx.fillRect(px + 21, py + 9 + walkBob, 1.5, 1.5);
+        ctx.fillRect(px + pWidth / 2 - 4, py + 9 + walkBob, 1.5, 1.5);
+        ctx.fillRect(px + pWidth / 2 + 3, py + 9 + walkBob, 1.5, 1.5);
         ctx.fillStyle = "rgba(244, 114, 182, 0.65)";
-        ctx.fillRect(px + 7, py + 12 + walkBob, 3, 1.5);
-        ctx.fillRect(px + 22, py + 12 + walkBob, 3, 1.5);
+        ctx.fillRect(px + pWidth / 2 - 6, py + 12 + walkBob, 3, 1.5);
+        ctx.fillRect(px + pWidth / 2 + 3, py + 12 + walkBob, 3, 1.5);
         ctx.strokeStyle = "#9d174d";
         ctx.lineWidth = 1.2;
         ctx.beginPath();
@@ -2504,10 +2506,11 @@ export class PixelArtRenderer {
         ctx.fill();
         ctx.fillStyle = "#ec4899";
         ctx.fillRect(px + 10, py + 4 + walkBob, 3, 3);
+        // Ojo izquierdo simétrico
         ctx.fillStyle = "#0f172a";
-        ctx.fillRect(px + 7, py + 9 + walkBob, 3, 3);
+        ctx.fillRect(px + pWidth / 2 - 5, py + 9 + walkBob, 3, 3);
         ctx.fillStyle = "#ffffff";
-        ctx.fillRect(px + 8, py + 9 + walkBob, 1.5, 1.5);
+        ctx.fillRect(px + pWidth / 2 - 4, py + 9 + walkBob, 1.5, 1.5);
       } else if (facing === "right") {
         ctx.beginPath();
         ctx.arc(px + pWidth / 2 - 1, py + 6 + walkBob, 9, 0, Math.PI * 2);
@@ -2517,10 +2520,11 @@ export class PixelArtRenderer {
         ctx.fill();
         ctx.fillStyle = "#ec4899";
         ctx.fillRect(px + 19, py + 4 + walkBob, 3, 3);
+        // Ojo derecho simétrico
         ctx.fillStyle = "#0f172a";
-        ctx.fillRect(px + 22, py + 9 + walkBob, 3, 3);
+        ctx.fillRect(px + pWidth / 2 + 2, py + 9 + walkBob, 3, 3);
         ctx.fillStyle = "#ffffff";
-        ctx.fillRect(px + 23, py + 9 + walkBob, 1.5, 1.5);
+        ctx.fillRect(px + pWidth / 2 + 3, py + 9 + walkBob, 1.5, 1.5);
       }
     } else {
       const hairBase = profile.avatar.hairColor || "#18181b";
@@ -2542,17 +2546,28 @@ export class PixelArtRenderer {
         ctx.lineTo(px + 6, py + 1 + walkBob);
         ctx.closePath();
         ctx.fill();
+        // --- RULOS varón (down) - rizos sobre frente ---
+        ctx.fillStyle = hairShade;
+        ctx.beginPath(); ctx.arc(px + pWidth / 2 - 6, py + 4 + walkBob, 3.3, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(px + pWidth / 2 - 1, py + 3 + walkBob, 3.6, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(px + pWidth / 2 + 4.5, py + 3 + walkBob, 3.6, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(px + pWidth / 2 + 8, py + 4 + walkBob, 3.3, 0, Math.PI * 2); ctx.fill();
+        // brillo rulo
+        ctx.fillStyle = hairHighlight;
+        ctx.beginPath(); ctx.arc(px + pWidth / 2 - 5, py + 3 + walkBob, 1, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(px + pWidth / 2 + 4, py + 3 + walkBob, 1, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = hairHighlight;
         ctx.fillRect(px + 10, py + 2 + walkBob, 12, 1.2);
+        // Ojos simétricos y boca centrada
         ctx.fillStyle = "#09090b";
-        ctx.fillRect(px + 9, py + 9 + walkBob, 3, 3);
-        ctx.fillRect(px + 20, py + 9 + walkBob, 3, 3);
+        ctx.fillRect(px + pWidth / 2 - 5, py + 9 + walkBob, 3, 3);
+        ctx.fillRect(px + pWidth / 2 + 2, py + 9 + walkBob, 3, 3);
         ctx.fillStyle = "#ffffff";
-        ctx.fillRect(px + 10, py + 9 + walkBob, 1.5, 1.5);
-        ctx.fillRect(px + 21, py + 9 + walkBob, 1.5, 1.5);
+        ctx.fillRect(px + pWidth / 2 - 4, py + 9 + walkBob, 1.5, 1.5);
+        ctx.fillRect(px + pWidth / 2 + 3, py + 9 + walkBob, 1.5, 1.5);
         ctx.fillStyle = "rgba(244, 114, 182, 0.45)";
-        ctx.fillRect(px + 7, py + 12 + walkBob, 3, 1.5);
-        ctx.fillRect(px + 22, py + 12 + walkBob, 3, 1.5);
+        ctx.fillRect(px + pWidth / 2 - 6, py + 12 + walkBob, 3, 1.5);
+        ctx.fillRect(px + pWidth / 2 + 3, py + 12 + walkBob, 3, 1.5);
         ctx.strokeStyle = "#6b3614";
         ctx.lineWidth = 1.2;
         ctx.beginPath();
@@ -2563,6 +2578,10 @@ export class PixelArtRenderer {
         ctx.beginPath();
         ctx.arc(px + pWidth / 2, py + 6 + walkBob, 9.5, 0, Math.PI * 2);
         ctx.fill();
+        // rulos coronilla (up)
+        ctx.fillStyle = hairShade;
+        ctx.beginPath(); ctx.arc(px + pWidth/2 -5, py + 2 + walkBob, 3, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(px + pWidth/2 +5, py + 2 + walkBob, 3, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle = hairShade;
         ctx.fillRect(px + 7, py + 12 + walkBob, pWidth - 14, 2);
         ctx.fillStyle = hairHighlight;
@@ -2574,10 +2593,14 @@ export class PixelArtRenderer {
         ctx.fill();
         ctx.fillStyle = hairHighlight;
         ctx.fillRect(px + 11, py + 2 + walkBob, 8, 1.2);
+        // rulo lateral izquierdo
+        ctx.fillStyle = hairShade;
+        ctx.beginPath(); ctx.arc(px + pWidth/2 -6, py + 4 + walkBob, 2.8, 0, Math.PI*2); ctx.fill();
+        // Ojo izquierdo simétrico
         ctx.fillStyle = "#09090b";
-        ctx.fillRect(px + 7, py + 9 + walkBob, 3, 3);
+        ctx.fillRect(px + pWidth / 2 - 5, py + 9 + walkBob, 3, 3);
         ctx.fillStyle = "#ffffff";
-        ctx.fillRect(px + 8, py + 9 + walkBob, 1.5, 1.5);
+        ctx.fillRect(px + pWidth / 2 - 4, py + 9 + walkBob, 1.5, 1.5);
       } else if (facing === "right") {
         ctx.fillStyle = hairBase;
         ctx.beginPath();
@@ -2585,10 +2608,81 @@ export class PixelArtRenderer {
         ctx.fill();
         ctx.fillStyle = hairHighlight;
         ctx.fillRect(px + 13, py + 2 + walkBob, 8, 1.2);
+        // rulo lateral derecho
+        ctx.fillStyle = hairShade;
+        ctx.beginPath(); ctx.arc(px + pWidth/2 +6, py + 4 + walkBob, 2.8, 0, Math.PI*2); ctx.fill();
+        // Ojo derecho simétrico
         ctx.fillStyle = "#09090b";
-        ctx.fillRect(px + 22, py + 9 + walkBob, 3, 3);
+        ctx.fillRect(px + pWidth / 2 + 2, py + 9 + walkBob, 3, 3);
         ctx.fillStyle = "#ffffff";
-        ctx.fillRect(px + 23, py + 9 + walkBob, 1.5, 1.5);
+        ctx.fillRect(px + pWidth / 2 + 3, py + 9 + walkBob, 1.5, 1.5);
+      }
+    }
+
+    // --- OVERRIDE: Cabeza estilo PixelAvatar perfil (pedido: estética idéntica a avatar de perfil) ---
+    {
+      const avScale = pWidth / 24;
+      const ax = px;
+      const ay = py + walkBob;
+      const drawRect = (x:number,y:number,w:number,h:number,c:string) => { ctx.fillStyle = c; ctx.fillRect(ax + x*avScale, ay + y*avScale, w*avScale, h*avScale); };
+      if (isGirl) {
+        const girlHair = profile.avatar.hairColor || '#451a03';
+        const girlHighlight = '#78350f';
+        // pelo largo atrás
+        drawRect(3,4,18,18,girlHair);
+        drawRect(2,8,20,12,girlHair);
+        drawRect(5,2,14,4,girlHair);
+        drawRect(6,3,12,1,girlHighlight);
+        // cara
+        drawRect(6,8,12,9,'#ffd1a4');
+        // flequillo
+        drawRect(5,7,14,3,girlHair);
+        drawRect(5,10,2,4,girlHair);
+        drawRect(17,10,2,4,girlHair);
+        // moño
+        drawRect(15,4,4,2,'#fbbf24');
+        drawRect(16,3,2,4,'#f59e0b');
+        // ojos
+        drawRect(8,11,2,3,'#0f172a'); drawRect(8,11,1,1,'#ffffff');
+        drawRect(14,11,2,3,'#0f172a'); drawRect(14,11,1,1,'#ffffff');
+        // mejillas
+        drawRect(6,13,2,1,'rgba(244,63,94,0.6)');
+        drawRect(16,13,2,1,'rgba(244,63,94,0.6)');
+        // sonrisa
+        drawRect(11,14,2,1,'#881337');
+      } else {
+        const primaryHair = profile.avatar.hairColor || '#18181b';
+        const highlightHair = '#3f3f46';
+        const darkHair = '#09090b';
+        // pelo base
+        drawRect(5,2,14,4,darkHair);
+        drawRect(4,3,16,5,primaryHair);
+        drawRect(3,5,18,6,primaryHair);
+        drawRect(2,7,20,5,primaryHair);
+        drawRect(2,8,3,5,darkHair);
+        drawRect(19,8,3,5,darkHair);
+        drawRect(7,3,10,1,highlightHair);
+        drawRect(6,4,4,1,highlightHair);
+        drawRect(14,4,4,1,highlightHair);
+        // cara
+        drawRect(5,8,14,9,'#ffd1a4');
+        drawRect(6,17,12,1,'#f5b584');
+        // flequillo
+        drawRect(5,7,4,3,primaryHair);
+        drawRect(6,10,2,2,primaryHair);
+        drawRect(9,7,2,1,primaryHair);
+        drawRect(11,7,4,2,primaryHair);
+        drawRect(15,7,4,4,primaryHair);
+        drawRect(16,11,2,1,primaryHair);
+        // ojos
+        drawRect(7,11,2,3,'#09090b'); drawRect(7,11,1,1,'#ffffff');
+        drawRect(15,11,2,3,'#09090b'); drawRect(15,11,1,1,'#ffffff');
+        // mejillas
+        drawRect(5,13,2,1,'rgba(244,114,182,0.55)');
+        drawRect(17,13,2,1,'rgba(244,114,182,0.55)');
+        // sonrisa
+        drawRect(11,13,2,1,'#5c2c16');
+        drawRect(11,15,2,1,'#6b3614');
       }
     }
 
@@ -3525,11 +3619,23 @@ export class PixelArtRenderer {
     ctx.fillRect(x + w - 5, y + 2, 3, 3);
     ctx.fillRect(x + 2, y + h - 5, 3, 3);
     ctx.fillRect(x + w - 5, y + h - 5, 3, 3);
-    // Título HABITOS centrado dorado
-    ctx.fillStyle = isGirl ? '#be185d' : '#92400e';
-    ctx.font = `bold ${Math.max(9, Math.min(13, Math.floor(w / 11)))}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.fillText('HABITOS', x + w / 2, y + 15);
+    // Título HABITOS centrado dorado — titileo para resaltar
+    {
+      const blink = (this.animTick % 40) < 20;
+      ctx.save();
+      if (blink) {
+        ctx.shadowColor = isGirl ? '#ec4899' : '#f59e0b';
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = isGirl ? '#ec4899' : '#f59e0b';
+      } else {
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = isGirl ? '#be185d' : '#92400e';
+      }
+      ctx.font = `bold ${Math.max(9, Math.min(13, Math.floor(w / 11)))}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('HABITOS', x + w / 2, y + 15);
+      ctx.restore();
+    }
     // Línea decorativa bajo título
     ctx.fillStyle = 'rgba(245,158,11,0.35)';
     ctx.fillRect(x + 10, y + 18, w - 20, 1);
@@ -3812,26 +3918,46 @@ export class PixelArtRenderer {
     ctx.fillStyle = isGirl ? '#e9d5ff' : '#f59e0b';
     ctx.fillRect(x, y + s(12), w, s(2));
 
-    // Desktop Monitor - 50% larger and with HABITOS text
-    const mx = x + s(36);
+    // Desktop Monitor - 50% larger y aún más ancho para que entre HABITOS
+    const mx = x + s(32);
     const my = y - s(16);
+    const monitorW = s(40);
+    const monitorH = s(26);
+    const innerW = s(36);
+    const innerH = s(20);
     ctx.fillStyle = '#334155';
-    ctx.fillRect(mx + s(12), my + s(24), s(8), s(6));
-    ctx.fillRect(mx + s(8), my + s(28), s(16), s(2));
+    ctx.fillRect(mx + s(14), my + monitorH, s(10), s(7));
+    ctx.fillRect(mx + s(9), my + monitorH + s(3), s(20), s(2));
     ctx.fillStyle = '#0f172a';
     ctx.beginPath();
-    ctx.roundRect(mx, my, s(32), s(24), s(3));
+    ctx.roundRect(mx, my, monitorW, monitorH, s(3));
     ctx.fill();
     ctx.fillStyle = isGirl ? '#db2777' : '#0284c7';
-    ctx.fillRect(mx + s(2), my + s(2), s(28), s(18));
-    // HABITOS label centered on monitor screen
-    ctx.fillStyle = '#ffffff';
-    ctx.font = `900 ${s(8)}px "Plus Jakarta Sans", sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('HABITOS', mx + s(16), my + s(11));
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'alphabetic';
+    ctx.fillRect(mx + s(2), my + s(2), innerW, innerH);
+    // HABITOS label centered on monitor screen — titileo resaltado
+    {
+      const blink = (this.animTick % 36) < 18;
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `900 ${s(7)}px "Plus Jakarta Sans", sans-serif`;
+      if (blink) {
+        ctx.shadowColor = '#fde047';
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = '#fef08a';
+      } else {
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#ffffff';
+      }
+      // leve escala pulse
+      const pulseScale = blink ? 1.08 : 1.0;
+      ctx.translate(mx + monitorW / 2, my + monitorH / 2 + 1);
+      ctx.scale(pulseScale, pulseScale);
+      ctx.fillText('HABITOS', 0, 0);
+      ctx.restore();
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+    }
 
     // Keyboard & Mousepad - scaled
     ctx.fillStyle = '#1e293b';
@@ -4331,44 +4457,52 @@ export class PixelArtRenderer {
   }
 
   private renderParent(ctx: CanvasRenderingContext2D, x: number, y: number, type: 'father' | 'mother') {
-    const pw = 30;
-    const ph = 42;
+    // Papá tamaño normal adulto, esbelto: ~1.35x alto del niño (niño 42), no gordo
+    const pw = 32;
+    const ph = 58;
 
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
     ctx.beginPath();
-    ctx.ellipse(x + pw / 2, y + ph + 2, 14, 6, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + pw / 2, y + ph + 2, 12, 5, 0, 0, Math.PI * 2);
     ctx.fill();
 
+    // Zapatos esbeltos
     ctx.fillStyle = '#1e293b';
-    ctx.fillRect(x + 4, y + ph - 6, 8, 6);
-    ctx.fillRect(x + pw - 12, y + ph - 6, 8, 6);
+    ctx.fillRect(x + 6, y + ph - 5, 7, 5);
+    ctx.fillRect(x + pw - 13, y + ph - 5, 7, 5);
 
+    // Pantalón más angosto
     ctx.fillStyle = '#334155';
-    ctx.fillRect(x + 4, y + ph - 16, pw - 8, 11);
+    ctx.fillRect(x + 7, y + ph - 18, pw - 14, 13);
 
-    ctx.fillStyle = '#0284c7';
+    // Camisa azul oscuro
+    ctx.fillStyle = '#1e3a8a';
     ctx.beginPath();
-    ctx.roundRect(x + 2, y + 14, pw - 4, 16, 4);
+    ctx.roundRect(x + 5, y + 16, pw - 10, 18, 3);
     ctx.fill();
 
+    // Cara
     ctx.fillStyle = '#ffd1a4';
     ctx.beginPath();
-    ctx.arc(x + pw / 2, y + 9, 10, 0, Math.PI * 2);
+    ctx.arc(x + pw / 2, y + 10, 9, 0, Math.PI * 2);
     ctx.fill();
 
+    // Pelo
     ctx.fillStyle = '#29180c';
     ctx.beginPath();
-    ctx.arc(x + pw / 2, y + 6, 11, Math.PI, Math.PI * 2);
+    ctx.arc(x + pw / 2, y + 7, 10, Math.PI, Math.PI * 2);
     ctx.fill();
 
+    // Ojos simétricos
     ctx.fillStyle = '#1e293b';
-    ctx.fillRect(x + 8, y + 9, 3, 3);
-    ctx.fillRect(x + 19, y + 9, 3, 3);
+    ctx.fillRect(x + pw / 2 - 5, y + 10, 2.5, 2.5);
+    ctx.fillRect(x + pw / 2 + 2.5, y + 10, 2.5, 2.5);
 
+    // Sonrisa
     ctx.strokeStyle = '#854d0e';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
-    ctx.arc(x + pw / 2, y + 12, 3, 0.2, Math.PI - 0.2);
+    ctx.arc(x + pw / 2, y + 13, 2.5, 0.2, Math.PI - 0.2);
     ctx.stroke();
   }
 

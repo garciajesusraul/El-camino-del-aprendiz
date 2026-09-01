@@ -95,12 +95,20 @@ interface ParentAdminDashboardProps {
   onToggleHabit?: (habitId: string) => void;
   onUpsertHabit?: (def: HabitDefinition) => void;
   onDeleteHabit?: (habitId: string) => void;
+  onApproveHabit?: (habitId: string, date?: string) => void;
+  onRejectHabit?: (habitId: string, date?: string) => void;
   onUpdatePomodoro?: (userId: string, minutes: number) => void;
   onUpdatePromises?: (promises: string[]) => void;
   onToggleMedalEnabled?: (id: string) => void;
   onUpsertMedal?: (def: any) => void;
   onDeleteMedal?: (id: string) => void;
   onSetManualMedal?: (id: string, userId: string, active: boolean) => void;
+  familyCode?: string | null;
+  syncInterval?: number;
+  onSyncNow?: () => void;
+  onSyncIntervalChange?: (m: number) => void;
+  onFamilySwitch?: () => void;
+  onOpenSuperAdmin?: () => void;
 }
 
 export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
@@ -137,8 +145,17 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
   onToggleHabit,
   onUpsertHabit,
   onDeleteHabit,
+  onApproveHabit,
+  onRejectHabit,
   onUpdatePomodoro,
   onUpdatePromises,
+  familyCode,
+  syncInterval,
+  onSyncNow,
+  onSyncIntervalChange,
+  onFamilySwitch,
+  onOpenSuperAdmin,
+  cloudStatus,
   onToggleMedalEnabled,
   onUpsertMedal,
   onDeleteMedal,
@@ -588,16 +605,16 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
               <p className="text-xs text-slate-400">Elegí una sección — todo está a la vista, desplazamiento vertical</p>
             </div>
             {[
+              { id: 'approvals', label: `Aprobaciones (${submittedTasks.length + (state.habitLogs?.filter(l=> l.userId===state.activeUserId && l.completed && !l.approved).length || 0)})`, icon: CheckCircle2, active: 'bg-emerald-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
+              { id: 'import', label: 'Carga Masiva (.TXT)', icon: UploadCloud, active: 'bg-indigo-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'users', label: `Usuarios & Perfiles (${state.profiles?.length || 1})`, icon: Users, active: 'bg-purple-600 text-white shadow ring-1 ring-purple-400/30', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'notebook', label: 'Libreta de Misiones & Tareas', icon: BookOpen, active: 'bg-blue-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'store', label: 'Tienda de Premios & Avatar', icon: ShoppingBag, active: 'bg-amber-500 text-slate-950 shadow', idle: 'text-slate-300 hover:bg-slate-800' },
-              { id: 'approvals', label: `Aprobaciones (${submittedTasks.length})`, icon: CheckCircle2, active: 'bg-emerald-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'scoring', label: 'Puntaje', icon: Award, active: 'bg-teal-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'medals', label: 'Álbum de Medallas', icon: Sparkles, active: 'bg-amber-600 text-slate-950 shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'habits', label: 'Hábitos y Premios Especiales', icon: Heart, active: 'bg-emerald-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'informe', label: 'ESTADISTICAS DEL NIÑO/A', icon: FileText, active: 'bg-sky-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'promises', label: 'Promesas de Dios', icon: BookOpen, active: 'bg-amber-600 text-slate-950 shadow', idle: 'text-slate-300 hover:bg-slate-800' },
-              { id: 'import', label: 'Carga Masiva (.TXT)', icon: UploadCloud, active: 'bg-indigo-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'cities', label: 'Desbloquear Ciudades', icon: Unlock, active: 'bg-cyan-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'config', label: 'Ajustes & PIN', icon: Settings, active: 'bg-slate-700 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
             ].map((item) => {
@@ -1543,61 +1560,90 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
                 )}
               </div>
 
-              {submittedTasks.length === 0 ? (
+              {(submittedTasks.length === 0 && (state.habitLogs || []).filter(l=> l.userId===state.activeUserId && l.completed && !l.approved).length===0) ? (
                 <div className="p-8 text-center bg-slate-800/40 rounded-2xl border border-dashed border-slate-700">
                   <CheckCircle2 className="w-10 h-10 text-emerald-400/60 mx-auto mb-2" />
                   <p className="text-sm font-bold text-slate-300">¡Al día! No hay tareas pendientes de aprobación.</p>
                   <p className="text-xs text-slate-500 mt-1">
-                    Cuando {state.profile.name} marque tareas como completadas en su libreta, aparecerán acá.
+                    Cuando {state.profile.name} marque tareas o hábitos como completadas, aparecerán acá.
                   </p>
                 </div>
               ) : (
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {submittedTasks.map((task) => {
-                    const isSelected = selectedTaskIds.includes(task.id);
-                    return (
-                      <div
-                        key={task.id}
-                        onClick={() => handleToggleSelectTask(task.id)}
-                        className={`p-3 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
-                          isSelected
-                            ? 'bg-amber-950/60 border-amber-500/80 shadow-md'
-                            : 'bg-slate-800/80 border-slate-700 hover:border-slate-600'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="text-amber-400">
-                            {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5 text-slate-500" />}
-                          </div>
-                          <div>
-                            <p className="font-bold text-sm text-white">{task.title}</p>
-                            <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
-                              <span className="capitalize">{task.materiaId}</span>
-                              <span>•</span>
-                              <span>Bimestre {task.bimestre} - Sem {task.semana}</span>
-                              <span>•</span>
-                              <span className="text-amber-300 font-bold">+{task.points} pts</span>
+                <div className="space-y-4 max-h-[32rem] overflow-y-auto">
+                  {submittedTasks.length > 0 && (
+                    <div className="space-y-2">
+                      <h5 className="text-xs font-black text-slate-300">Tareas ({submittedTasks.length})</h5>
+                      {submittedTasks.map((task) => {
+                        const isSelected = selectedTaskIds.includes(task.id);
+                        return (
+                          <div
+                            key={task.id}
+                            onClick={() => handleToggleSelectTask(task.id)}
+                            className={`p-3 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
+                              isSelected
+                                ? 'bg-amber-950/60 border-amber-500/80 shadow-md'
+                                : 'bg-slate-800/80 border-slate-700 hover:border-slate-600'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="text-amber-400">
+                                {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5 text-slate-500" />}
+                              </div>
+                              <div>
+                                <p className="font-bold text-sm text-white">{task.title}</p>
+                                <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                                  <span className="capitalize">{task.materiaId}</span>
+                                  <span>•</span>
+                                  <span>Bimestre {task.bimestre} - Sem {task.semana}</span>
+                                  <span>•</span>
+                                  <span className="text-amber-300 font-bold">+{task.points} pts</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                onClick={() => onApproveTasks([task.id])}
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow cursor-pointer"
+                              >
+                                Aprobar
+                              </button>
+                              <button
+                                onClick={() => onRejectTask(task.id)}
+                                className="px-3 py-1.5 bg-rose-900/60 hover:bg-rose-800 text-rose-200 rounded-xl text-xs font-bold border border-rose-700 cursor-pointer"
+                              >
+                                Rechazar
+                              </button>
                             </div>
                           </div>
-                        </div>
-
-                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => onApproveTasks([task.id])}
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow cursor-pointer"
-                          >
-                            Aprobar
-                          </button>
-                          <button
-                            onClick={() => onRejectTask(task.id)}
-                            className="px-3 py-1.5 bg-rose-900/60 hover:bg-rose-800 text-rose-200 rounded-xl text-xs font-bold border border-rose-700 cursor-pointer"
-                          >
-                            Rechazar
-                          </button>
-                        </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {(() => {
+                    const pendingHabits = (state.habitLogs || []).filter(l => l.userId===state.activeUserId && l.completed && !l.approved);
+                    if (pendingHabits.length===0) return null;
+                    return (
+                      <div className="space-y-2">
+                        <h5 className="text-xs font-black text-emerald-300 flex items-center gap-2"><Heart className="w-4 h-4" /> Hábitos pendientes ({pendingHabits.length})</h5>
+                        {pendingHabits.map(log => {
+                          const habit = state.habitDefinitions.find(h=>h.id===log.habitId);
+                          return (
+                            <div key={log.habitId+'-'+log.date} className="p-3 rounded-2xl border bg-slate-800/80 border-emerald-700/40 flex items-center justify-between">
+                              <div>
+                                <p className="font-bold text-sm text-white">{habit?.icon} {habit?.title} <span className="text-amber-300">+{habit?.points} vida</span></p>
+                                <div className="text-xs text-slate-400">{log.date} • {habit?.description} — {habit?.goalType==='daily' ? `Diaria ${habit?.goalCount}` : habit?.goalType==='weekly' ? `Semanal ${habit?.goalCount}` : `Mensual ${habit?.goalCount}`}</div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button onClick={() => onApproveHabit && onApproveHabit(log.habitId, log.date)} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold cursor-pointer">Aprobar</button>
+                                <button onClick={() => onRejectHabit && onRejectHabit(log.habitId, log.date)} className="px-3 py-1.5 bg-rose-900/60 hover:bg-rose-800 text-rose-200 rounded-xl text-xs font-bold border border-rose-700 cursor-pointer">Rechazar</button>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     );
-                  })}
+                  })()}
                 </div>
               )}
             </div>
@@ -1980,7 +2026,25 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
                             <div className="text-[11px] text-slate-500">Cumplimiento: <span className="font-black text-emerald-400">{compliance}%</span></div>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <button onClick={() => onToggleHabit && onToggleHabit(h.id)} className="px-2.5 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-[11px] font-bold cursor-pointer">MARCAR COMO LISTA</button>
+                            {(() => {
+                              const today = new Date().toISOString().slice(0,10);
+                              const logToday = (state.habitLogs || []).find(l=> l.habitId===h.id && l.userId===state.activeUserId && l.date===today);
+                              const isPending = !!(logToday?.completed && !logToday?.approved);
+                              const isApproved = !!(logToday?.completed && logToday?.approved);
+                              if (isPending) {
+                                return (
+                                  <>
+                                    <span className="text-[11px] font-bold text-amber-300 mr-1">Pendiente</span>
+                                    <button onClick={() => onApproveHabit && onApproveHabit(h.id)} className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold cursor-pointer">Aprobar</button>
+                                    <button onClick={() => onRejectHabit && onRejectHabit(h.id)} className="px-2.5 py-1.5 rounded-lg bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-700 text-[11px] font-bold cursor-pointer">Rechazar</button>
+                                  </>
+                                );
+                              }
+                              if (isApproved) {
+                                return <span className="text-[11px] font-bold text-emerald-400">✓ Aprobado</span>;
+                              }
+                              return <button onClick={() => onToggleHabit && onToggleHabit(h.id)} className="px-2.5 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-[11px] font-bold cursor-pointer">MARCAR COMO LISTA</button>;
+                            })()}
                             <button onClick={() => { setHabitForm({ ...h }); setEditingHabitId(h.id); setShowHabitForm(true); }} className="p-1.5 text-slate-400 hover:text-amber-300 rounded-lg hover:bg-slate-700 cursor-pointer"><Edit3 className="w-4 h-4" /></button>
                             <button onClick={() => { if (onUpsertHabit) onUpsertHabit({ ...h, enabled: !h.enabled }); }} className={`p-1.5 rounded-lg cursor-pointer ${h.enabled ? 'text-emerald-400 hover:bg-slate-700' : 'text-slate-500 hover:bg-slate-700'}`} title="Activar/Desactivar"><Check className="w-4 h-4" /></button>
                             <button onClick={() => { if (confirm(`Eliminar hábito "${h.title}"?` ) && onDeleteHabit) onDeleteHabit(h.id); }} className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-700 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
@@ -2138,6 +2202,31 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
                 </div>
               </div>
 
+              {/* Familia, Sincronización y Reloj - solo en padre (oculto del niño) */}
+              <div className="bg-slate-800/80 border border-sky-500/40 rounded-2xl p-4 space-y-3">
+                <h4 className="text-sm font-black text-sky-300 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-sky-600 flex items-center justify-center text-[10px]">☁️</span>
+                  <span>Familia y Sincronización</span>
+                  {cloudStatus && <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-slate-700 text-slate-300 border border-slate-600">{cloudStatus}</span>}
+                </h4>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-slate-400">Familia actual:</span>
+                  <span className={`px-2 py-1 rounded-full border font-black tracking-widest text-xs ${familyCode==='LEON' ? 'bg-amber-500 text-slate-900 border-amber-400' : 'bg-slate-800 text-slate-200 border-slate-700'}`}>{familyCode || '—'}</span>
+                  <button onClick={() => onFamilySwitch && onFamilySwitch()} className="px-2 py-1 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs cursor-pointer">Cambiar sesión</button>
+                  {familyCode==='LEON' && onOpenSuperAdmin && (
+                    <button onClick={() => onOpenSuperAdmin && onOpenSuperAdmin()} className="px-2 py-1 rounded-full bg-violet-700 hover:bg-violet-600 border border-violet-500 text-white text-xs font-black cursor-pointer">🛡️ SUPERADMIN</button>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-slate-400">Reloj sync cada</span>
+                  {[5,10,15,30,60].map((m) => (
+                    <button key={m} onClick={() => onSyncIntervalChange && onSyncIntervalChange(m)} className={`px-2 py-1 rounded-full text-xs font-bold border cursor-pointer ${syncInterval===m ? 'bg-amber-500 text-slate-900 border-amber-400' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'}`}>{m}m</button>
+                  ))}
+                  <button onClick={() => onSyncNow && onSyncNow()} className="ml-auto px-3 py-1 rounded-full bg-emerald-700 hover:bg-emerald-600 border border-emerald-600 text-white text-xs font-bold cursor-pointer">↻ Forzar sincronizado ahora</button>
+                </div>
+                <div className="text-xs text-slate-500">Tiempo total: {state.playStats?.totalMinutes ?? 0} min • Activo: {state.playStats?.activeMinutes ?? 0} min • Pausa y &gt;4min quieto no cuentan.</div>
+              </div>
+
               {/* Actualizar Contraseña Parental */}
               <div className="bg-slate-800/80 border border-amber-500/40 rounded-2xl p-4 space-y-3">
                 <h4 className="text-sm font-black text-amber-300 flex items-center gap-2">
@@ -2145,7 +2234,7 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
                   <span>Contraseña Parental (PIN de 4 dígitos)</span>
                 </h4>
                 <p className="text-xs text-slate-400">
-                  Contraseña actual: <strong className="text-amber-300 font-mono">{expectedPin}</strong>. Podés cambiarla a otra de 4 dígitos.
+                  PIN de 4 dígitos configurado (••••). Ingresa uno nuevo para cambiarlo — no se muestra por seguridad.
                 </p>
 
                 <form onSubmit={handleSavePin} className="flex items-center gap-3 max-w-sm">
@@ -2155,6 +2244,9 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
                     placeholder="Nuevo PIN de 4 dígitos"
                     value={newPinInput}
                     onChange={(e) => setNewPinInput(e.target.value.replace(/\D/g, ''))}
+                    autoComplete="new-password"
+                    autoCorrect="off"
+                    spellCheck={false}
                     className="w-40 text-xs p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono tracking-widest text-center font-bold"
                   />
                   <button

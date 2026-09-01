@@ -9,13 +9,13 @@ export function FamilyGate({ onEnter }: { onEnter: (code: string) => void }) {
 
   const handleEnter = async () => {
     const norm = normalizeFamilyCode(code);
-    if (!norm) { setError('Escribe el código familiar (ej: LEON)'); return; }
+    if (!norm) { setError('Escribe el código familiar'); return; }
     setLoading(true); setError(null);
     try {
       if (isSupabaseConfigured()) {
         const res = await validateFamilyCode(norm);
         if (!res.ok) { setError(res.error || 'Error validando'); setLoading(false); return; }
-        if (!res.exists) { setError(`Familia "${norm}" no existe. Pide al SUPERADMIN (LEON) que la cree.`); setLoading(false); return; }
+        if (!res.exists) { setError(`Familia "${norm}" no existe. Pide al administrador principal que la cree.`); setLoading(false); return; }
       }
       setFamilyCode(norm);
       onEnter(norm);
@@ -37,11 +37,14 @@ export function FamilyGate({ onEnter }: { onEnter: (code: string) => void }) {
           value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())}
           onKeyDown={(e) => e.key === 'Enter' && handleEnter()}
-          placeholder="Ej: LEON, OVEJA..."
+          placeholder="INGRESA CÓDIGO"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
           className="mt-1 w-full px-3 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white font-black tracking-widest text-center text-lg uppercase focus:outline-none focus:border-amber-500"
           autoFocus
         />
-        <p className="text-[11px] text-slate-500 mt-2 text-center">El niño debe saber este código. Ej: familia LEON pone <b className="text-slate-300">LEON</b>. Otra familia OVEJA pone OVEJA.</p>
+        <p className="text-[11px] text-slate-500 mt-2 text-center">Ingresa el código familiar proporcionado por el administrador.</p>
         {error && <div className="mt-3 bg-red-950/50 border border-red-600 text-red-200 text-xs rounded-xl p-2.5 text-center">{error}</div>}
         <button
           onClick={handleEnter}
@@ -50,8 +53,7 @@ export function FamilyGate({ onEnter }: { onEnter: (code: string) => void }) {
         >
           {loading ? 'Verificando...' : 'Entrar →'}
         </button>
-        {!isSupabaseConfigured() && <p className="text-[11px] text-amber-400/80 mt-3 text-center">Modo offline: Supabase no configurado. Cualquier código entra local.</p>}
-        <p className="text-[10px] text-slate-600 mt-4 text-center">¿Eres admin? Entra con LEON y busca SUPERADMIN (pass: uruguay)</p>
+        {!isSupabaseConfigured() && <p className="text-[11px] text-amber-400/80 mt-3 text-center">Modo offline: Supabase no configurado.</p>}
       </div>
     </div>
   );

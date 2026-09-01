@@ -28,9 +28,11 @@ interface GameCanvasProps {
   onOpenNotebook: (materiaId?: string, cityNum?: number, houseNum?: number) => void;
   onOpenStore?: () => void;
   onOpenAdmin?: () => void;
-  onUpdateVolume?: (volume: number) => void;
+  onUpdateVolume?: (sfxVolume: number, musicVolume?: number) => void;
   onOpenHabitsBoard?: () => void;
   onActivity?: (isMoving: boolean) => void;
+  isPaused?: boolean;
+  onTogglePause?: () => void;
 }
 
 interface DialogueData {
@@ -51,8 +53,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   onOpenNotebook,
   onOpenStore,
   onOpenAdmin,
+  onUpdateVolume,
   onOpenHabitsBoard,
   onActivity,
+  isPaused,
+  onTogglePause,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -69,11 +74,17 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
   const [interactionPrompt, setInteractionPrompt] = useState<string | null>(null);
   const [activeDialogue, setActiveDialogue] = useState<DialogueData | null>(null);
-  const [soundActive, setSoundActive] = useState(state.settings.soundEnabled);
+  const [soundActive, setSoundActive] = useState(state.settings.soundEnabled !== false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControlsMenu, setShowControlsMenu] = useState(false);
   const [controlsPosition, setControlsPosition] = useState<'right' | 'left'>('right');
   const [audioBlocked, setAudioBlocked] = useState(false);
+  const [showVolumePopup, setShowVolumePopup] = useState(false);
+
+  // Sincroniza soundActive si cambia desde ajustes
+  useEffect(() => {
+    setSoundActive(state.settings.soundEnabled !== false);
+  }, [state.settings.soundEnabled]);
 
   // Keys ref to avoid re-render lag
   const keysRef = useRef<{ [key: string]: boolean }>({});
@@ -256,20 +267,21 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       }
     } else if (state.currentScene === 'HOUSE') {
-      // Habit board hitbox (330,38,w,h) — dinámico según Ajustes & PIN
+      // Acceso hábitos vía computadora del escritorio (no biblioteca) — monitor 83,151,60,39 + teclado
       {
-        const bw = state.settings.habitBoardWidth ?? 140;
-        const bh = state.settings.habitBoardHeight ?? 72;
-        if (cx >= 330 && cx <= 330 + bw && cy >= 38 && cy <= 38 + bh) {
+        const deskX = 35; const scale = 1.5; const s = (n:number)=>Math.round(n*scale);
+        const mx = deskX + s(32); const my = 175 - s(16); const monitorW = s(40); const monitorH = s(26);
+        const inComputer = (cx >= mx-4 && cx <= mx + monitorW + 4 && cy >= my-4 && cy <= my + monitorH + 4) || (cx >= deskX && cx <= deskX + s(98) && cy >= 175 + s(12) && cy <= 175 + s(20));
+        if (inComputer) {
           sound.playSelect();
           if (onOpenHabitsBoard) onOpenHabitsBoard();
           else setActiveDialogue({
-            speakerName: 'Cuadro de Hábitos',
+            speakerName: 'Computadora de Hábitos',
             speakerRole: 'Hábitos Diarios',
-            avatarEmoji: '🖼️',
-            avatarBg: 'bg-emerald-700',
-            text: '¡Tocá el cuadro para registrar tus hábitos de hoy y ganar puntos de vida!',
-            primaryActionLabel: 'Abrir Hábitos [A]',
+            avatarEmoji: '💻',
+            avatarBg: 'bg-sky-700',
+            text: '¡Tocá la computadora para registrar tus hábitos de hoy y ganar puntos de vida! (Tecla H)',
+            primaryActionLabel: 'Abrir Hábitos [H]',
             onPrimaryAction: () => { setActiveDialogue(null); if (onOpenHabitsBoard) onOpenHabitsBoard(); },
           });
           return;
@@ -361,28 +373,22 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         onSceneChange('PLAZA');
         return;
       }
-      // Habit board interaction - hitbox dinámica 330,38 + settings
+      // Hábitos vía computadora del escritorio (no biblioteca)
       {
-        const bw = state.settings.habitBoardWidth ?? 140;
-        const bh = state.settings.habitBoardHeight ?? 72;
-        const inHabitBoard = p.x >= 330 && p.x <= 330 + bw && p.y >= 70 && p.y <= 170;
-        if (inHabitBoard || (p.x >= 310 && p.x <= 500 && p.y < 180)) {
-          // prioridad al cuadro si estás cerca de la pared central
-          const isNearBoard = p.x >= 320 && p.x <= 480 && p.y < 200;
-          if (isNearBoard) {
-            sound.playSelect();
-            if (onOpenHabitsBoard) onOpenHabitsBoard();
-            else setActiveDialogue({
-              speakerName: 'Cuadro de Hábitos',
-              speakerRole: 'Hábitos Diarios',
-              avatarEmoji: '🖼️',
-              avatarBg: 'bg-emerald-700',
-              text: '¡Registrá tus hábitos de hoy y ganá puntos de vida!',
-              primaryActionLabel: 'Abrir Hábitos [A]',
-              onPrimaryAction: () => { setActiveDialogue(null); if (onOpenHabitsBoard) onOpenHabitsBoard(); },
-            });
-            return;
-          }
+        const nearComputer = p.x >= 55 && p.x <= 165 && p.y >= 145 && p.y <= 265;
+        if (nearComputer) {
+          sound.playSelect();
+          if (onOpenHabitsBoard) onOpenHabitsBoard();
+          else setActiveDialogue({
+            speakerName: 'Computadora de Hábitos',
+            speakerRole: 'Hábitos Diarios',
+            avatarEmoji: '💻',
+            avatarBg: 'bg-sky-700',
+            text: '¡Usá la computadora para registrar tus hábitos de hoy! [H]',
+            primaryActionLabel: 'Abrir Hábitos [H]',
+            onPrimaryAction: () => { setActiveDialogue(null); if (onOpenHabitsBoard) onOpenHabitsBoard(); },
+          });
+          return;
         }
       }
         // Open Dad's RPG dialogue with large font
@@ -576,6 +582,13 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         setActiveDialogue(null);
         onOpenAdmin();
       }
+
+      // [Tecla H] -> Hábitos solo en Casa (computadora)
+      if (e.code === 'KeyH' && state.currentScene === 'HOUSE' && onOpenHabitsBoard) {
+        sound.playSelect();
+        setActiveDialogue(null);
+        onOpenHabitsBoard();
+      }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
@@ -590,7 +603,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [state.currentScene, state.currentMateria, state.currentCity, checkActionTrigger, handleBackNavigation, onOpenAdmin]);
+  }, [state.currentScene, state.currentMateria, state.currentCity, checkActionTrigger, handleBackNavigation, onOpenAdmin, onOpenHabitsBoard]);
 
   // Main Game Loop (Physics + 60fps Render)
   useEffect(() => {
@@ -609,7 +622,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       let newFacing = playerRef.current.facing;
       let isMoving = false;
 
-      if (!activeDialogue) {
+      if (isPaused) {
+        // Pausado: no mueve, no cuenta como activo
+        isMoving = false;
+      } else if (!activeDialogue) {
         // Movement: Arrows or WASD (Arrow keys take priority)
         if (keys['ArrowUp'] || keys['w'] || keys['KeyW']) {
           dy -= playerRef.current.speed;
@@ -681,16 +697,16 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
       // Check proximity prompts
       let promptText: string | null = null;
-      if (!activeDialogue) {
+      if (isPaused) {
+        promptText = '⏸ PAUSADO - Presioná PLAY para continuar';
+      } else if (!activeDialogue) {
         if (state.currentScene === 'HOUSE') {
           if (nextY > 430 && nextX > 300 && nextX < 500) {
             promptText = '🚪 Presioná [A] para salir al día';
           } else {
-            const bw = state.settings.habitBoardWidth ?? 140;
-            // const bh = state.settings.habitBoardHeight ?? 72;
-            const nearHabits = nextX >= 315 && nextX <= 330 + bw + 15 && nextY < 200;
-            if (nearHabits) {
-              promptText = '🖼️ Presioná [A] para abrir Hábitos';
+            const nearComputer = nextX >= 55 && nextX <= 165 && nextY >= 145 && nextY <= 265;
+            if (nearComputer) {
+              promptText = '💻 Presioná [H] para abrir Hábitos (computadora)';
             } else {
               promptText = '💬 Presioná [A] para hablar con Papá o [M] para Misiones';
             }
@@ -929,7 +945,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     animId = requestAnimationFrame(gameLoop);
     return () => cancelAnimationFrame(animId);
-  }, [state, activeDialogue, getEffectiveSeason]);
+  }, [state, activeDialogue, getEffectiveSeason, isPaused, onActivity]);
 
   return (
     <div className="relative w-full h-full flex items-center justify-center select-none overflow-hidden bg-slate-950">
@@ -1038,20 +1054,59 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           </div>
         )}
 
-        {/* Top-Right Quick Tool Bar: Fullscreen */}
-        <div className="absolute top-3 right-3 flex items-center gap-2 z-30">
+        {/* Top-Right Vertical Tool Bar: Fullscreen - Sonido - Pausa */}
+        <div className="absolute top-3 right-3 flex flex-col items-center gap-2 z-30">
           <button
             onClick={toggleFullscreen}
             className="w-11 h-11 bg-slate-950/85 hover:bg-slate-900 text-white rounded-xl border-2 border-amber-500/70 backdrop-blur-md shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
             title={isFullscreen ? 'Salir de Pantalla Completa [F]' : 'Pantalla Completa [F]'}
           >
-            {isFullscreen ? (
-              <Minimize className="w-5 h-5 text-amber-300" />
-            ) : (
-              <Maximize className="w-5 h-5 text-amber-300" />
-            )}
+            {isFullscreen ? <Minimize className="w-5 h-5 text-amber-300" /> : <Maximize className="w-5 h-5 text-amber-300" />}
           </button>
+          <div className="relative">
+            <button
+              onClick={() => { sound.playSelect(); setShowVolumePopup(!showVolumePopup); }}
+              className="w-11 h-11 bg-slate-950/85 hover:bg-slate-900 text-white rounded-xl border-2 border-slate-700/80 hover:border-slate-500 backdrop-blur-md shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              title={`Sonido ${state.settings.soundVolume}% / Música ${state.settings.musicVolume}%`}
+            >
+              {(state.settings.soundEnabled===false && state.settings.musicEnabled===false) ? <VolumeX className="w-5 h-5 text-rose-400" /> : <Volume2 className="w-5 h-5 text-emerald-400" />}
+            </button>
+            {showVolumePopup && (
+              <>
+                <div className="fixed inset-0 z-20" onClick={() => setShowVolumePopup(false)} />
+                <div className="absolute top-12 right-0 z-30 w-56 bg-slate-950/96 border-2 border-amber-500/80 rounded-2xl p-3 shadow-2xl backdrop-blur-xl space-y-2">
+                  <div className="text-xs font-black text-amber-300 border-b border-slate-800 pb-1">🎵 Sonido</div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[11px] font-bold"><span className="text-slate-300">Efectos</span><span className="text-emerald-400 font-mono">{state.settings.soundVolume}%</span></div>
+                    <input type="range" min="0" max="100" value={state.settings.soundVolume} onChange={(e) => { const v=Number(e.target.value); sound.setSfxVolume(v); if (onUpdateVolume) onUpdateVolume(v, state.settings.musicVolume); }} className="w-full accent-emerald-500 h-2 bg-slate-900 rounded-lg cursor-pointer" />
+                  </div>
+                  <div className="space-y-1 pt-1 border-t border-slate-800">
+                    <div className="flex justify-between text-[11px] font-bold"><span className="text-slate-300">Música</span><span className="text-amber-400 font-mono">{state.settings.musicVolume}%</span></div>
+                    <input type="range" min="0" max="100" value={state.settings.musicVolume} onChange={(e) => { const v=Number(e.target.value); sound.setMusicVolume(v); if (onUpdateVolume) onUpdateVolume(state.settings.soundVolume, v); }} className="w-full accent-amber-500 h-2 bg-slate-900 rounded-lg cursor-pointer" />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          <button
+            onClick={() => { sound.playSelect(); if (onTogglePause) onTogglePause(); }}
+            className={`w-11 h-11 rounded-xl border-2 backdrop-blur-md shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer text-[11px] font-black ${isPaused ? 'bg-emerald-700 hover:bg-emerald-600 text-white border-emerald-500' : 'bg-slate-950/85 hover:bg-slate-900 text-amber-300 border-amber-500/70'}`}
+            title={isPaused ? 'Reanudar (PLAY)' : 'Pausar juego'}
+          >
+            {isPaused ? '▶' : '⏸'}
+          </button>
+          <span className="text-[9px] font-black text-amber-300 bg-slate-950/70 px-1 py-0.5 rounded border border-amber-500/30">{isPaused ? 'PLAY' : 'PAUSA'}</span>
         </div>
+        {isPaused && (
+          <div className="absolute inset-0 z-20 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center">
+            <div className="bg-slate-900 border-2 border-amber-500 rounded-3xl px-8 py-6 text-center shadow-2xl">
+              <div className="text-3xl mb-2">⏸️</div>
+              <div className="text-lg font-black text-amber-300">JUEGO EN PAUSA</div>
+              <p className="text-xs text-slate-400 mt-1">El tiempo no cuenta mientras está pausado</p>
+              <button onClick={() => onTogglePause && onTogglePause()} className="mt-3 px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm shadow cursor-pointer">▶ PLAY</button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* --- BOTTOM COLLAPSIBLE TRANSPARENT CONTROLS MENU (RIGHT OR LEFT) --- */}

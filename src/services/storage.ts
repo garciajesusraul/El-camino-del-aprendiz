@@ -50,7 +50,7 @@ export function createDefaultProfile(
     avatar: {
       skinTone: '#ffd1a4',
       hairColor: gender === 'girl' ? '#451a03' : '#18181b',
-      hairStyle: gender === 'girl' ? 'long' : 'classic',
+      hairStyle: gender === 'girl' ? 'long' : 'prota',
       outfitColor: gender === 'girl' ? '#f43f5e' : '#cbd5e1',
       pantsColor: gender === 'girl' ? '#1e3a8a' : '#334155',
       skirtColor: '#e11d48',
@@ -944,7 +944,8 @@ export function getHabitCompliance(state: AppState, habitId: string, userId?: st
   const logs = (state.habitLogs || []).filter(l => l.habitId===habitId && l.userId===uid);
   if (logs.length===0) return 0;
   const total = logs.length;
-  const completed = logs.filter(l=>l.completed).length;
+  // Solo cuenta como cumplido si está completado y aprobado (evita 100% con pendiente)
+  const completed = logs.filter(l=>l.completed && l.approved).length;
   return Math.round((completed/total)*100);
 }
 
@@ -956,19 +957,14 @@ export function toggleHabitToday(state: AppState, habitId: string): AppState {
   const habit = state.habitDefinitions.find(h=>h.id===habitId);
   if (!habit) return state;
   if (existingIdx>=0) {
-    logs[existingIdx] = { ...logs[existingIdx], completed: !logs[existingIdx].completed };
+    const cur = logs[existingIdx];
+    const newCompleted = !cur.completed;
+    logs[existingIdx] = { ...cur, completed: newCompleted, approved: newCompleted ? false : undefined, approvedAt: undefined };
   } else {
-    logs.push({ habitId, userId: uid, date: today, completed: true, createdAt: new Date().toISOString() });
+    logs.push({ habitId, userId: uid, date: today, completed: true, approved: false, createdAt: new Date().toISOString() });
   }
-  // Award vida points if newly completed
-  const isNowCompleted = logs.find(l=> l.habitId===habitId && l.userId===uid && l.date===today)?.completed;
-  let profile = state.profile;
-  if (isNowCompleted) {
-    profile = { ...profile, lifePoints: profile.lifePoints + (habit.points || 5) };
-  } else {
-    profile = { ...profile, lifePoints: Math.max(0, profile.lifePoints - (habit.points || 5)) };
-  }
-  const newState: AppState = { ...state, habitLogs: logs, profile };
+  // No otorga puntos aquí: queda pendiente de aprobación en APROBACIONES (niño tilda como lista, adulto confirma)
+  const newState: AppState = { ...state, habitLogs: logs };
   saveAppState(newState);
   return newState;
 }
@@ -983,6 +979,35 @@ export function deleteHabitDefinition(state: AppState, habitId: string): AppStat
   const defs = state.habitDefinitions.filter(d=> d.id!==habitId);
   const logs = (state.habitLogs||[]).filter(l=> l.habitId!==habitId);
   const ns={...state, habitDefinitions: defs, habitLogs: logs}; saveAppState(ns); return ns;
+}
+
+export function approveHabit(state: AppState, habitId: string, date?: string): AppState {
+  const uid = state.activeUserId;
+  const targetDate = date || new Date().toISOString().slice(0,10);
+  const idx = (state.habitLogs||[]).findIndex(l=> l.habitId===habitId && l.userId===uid && l.date===targetDate);
+  if (idx<0) return state;
+  const log = state.habitLogs[idx];
+  if (log.approved) return state;
+  const habit = state.habitDefinitions.find(h=>h.id===habitId);
+  const logs = [...state.habitLogs];
+  logs[idx] = { ...log, approved: true, approvedAt: new Date().toISOString() };
+  let profile = state.profile;
+  if (habit) profile = { ...profile, lifePoints: profile.lifePoints + (habit.points||5) };
+  const newState: AppState = { ...state, habitLogs: logs, profile };
+  saveAppState(newState);
+  return newState;
+}
+
+export function rejectHabit(state: AppState, habitId: string, date?: string): AppState {
+  const uid = state.activeUserId;
+  const targetDate = date || new Date().toISOString().slice(0,10);
+  const idx = (state.habitLogs||[]).findIndex(l=> l.habitId===habitId && l.userId===uid && l.date===targetDate);
+  if (idx<0) return state;
+  const logs = [...state.habitLogs];
+  logs[idx] = { ...logs[idx], completed: false, approved: false, approvedAt: undefined };
+  const newState: AppState = { ...state, habitLogs: logs };
+  saveAppState(newState);
+  return newState;
 }
 
 export function canRedeemHabitReward(state: AppState, item: StoreItem, userId?: string): { allowed: boolean; reason?: string } {

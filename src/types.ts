@@ -186,6 +186,8 @@ export interface HabitLog {
   date: string; // YYYY-MM-DD
   completed: boolean;
   createdAt: string;
+  approved?: boolean;
+  approvedAt?: string;
 }
 
 export interface PlayStats {
