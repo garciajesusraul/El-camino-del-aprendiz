@@ -80,15 +80,19 @@ export default function App() {
   const isMovingRef = React.useRef(false);
   const lastActiveRef = React.useRef<number>(Date.now());
 
+  const handleActivity = useCallback((moving: boolean) => {
+    isMovingRef.current = moving;
+    if (moving) lastActiveRef.current = Date.now();
+  }, []);
+
   // Timer + tracking total/active con pausa e idle >4min no cuenta
   useEffect(() => {
     const id = window.setInterval(() => {
       if (isPaused) return;
-      setSessionSec(Math.floor((Date.now() - sessionStartRef.current) / 1000));
       if (Date.now() - lastActiveRef.current > 240000) return;
+      setSessionSec(Math.floor((Date.now() - sessionStartRef.current) / 1000));
       if (isMovingRef.current) {
         setActiveSec((prev) => prev + 1);
-        lastActiveRef.current = Date.now();
       }
     }, 1000);
     return () => window.clearInterval(id);
@@ -103,17 +107,19 @@ export default function App() {
       }
     }
   }, [isPaused, state.settings.musicEnabled, state.settings.musicVolume, state.currentScene, state.currentMateria]);
-  // Actualiza lastActive en cualquier interacción para idle
+  // Actualiza lastActive en interacciones significativas (no mousemove genérico para no contar mouse quieto como activo)
   useEffect(() => {
     const bump = () => { lastActiveRef.current = Date.now(); };
+    const bumpKey = (e: KeyboardEvent) => {
+      // H y otras teclas de acción cuentan como actividad
+      lastActiveRef.current = Date.now();
+    };
     window.addEventListener('click', bump);
-    window.addEventListener('keydown', bump);
-    window.addEventListener('mousemove', bump);
+    window.addEventListener('keydown', bumpKey);
     window.addEventListener('touchstart', bump);
     return () => {
       window.removeEventListener('click', bump);
-      window.removeEventListener('keydown', bump);
-      window.removeEventListener('mousemove', bump);
+      window.removeEventListener('keydown', bumpKey);
       window.removeEventListener('touchstart', bump);
     };
   }, []);
@@ -601,7 +607,7 @@ export default function App() {
           onOpenAdmin={() => setShowAdmin(true)}
           onUpdateVolume={handleUpdateVolume}
           onOpenHabitsBoard={() => setShowHabitsBoard(true)}
-          onActivity={(moving) => { isMovingRef.current = moving; if (moving) lastActiveRef.current = Date.now(); }}
+          onActivity={handleActivity}
           isPaused={isPaused}
           onTogglePause={handleTogglePause}
         />

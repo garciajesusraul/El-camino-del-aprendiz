@@ -184,7 +184,7 @@ export function loadAppState(): AppState {
           accessory: 'backpack',
         };
       } else if (p.gender === 'boy') {
-        // Normalize boy avatar to Prota sprite palette with black hair
+        // Normalize boy avatar - respecta rulos si eligió curly (opción B)
         if (!p.avatar.hairColor || p.avatar.hairColor === '#451a03') {
           p.avatar.hairColor = '#18181b';
         }
@@ -194,7 +194,9 @@ export function loadAppState(): AppState {
         if (!p.avatar.pantsColor || p.avatar.pantsColor === '#1e3a8a') {
           p.avatar.pantsColor = '#334155';
         }
-        p.avatar.hairStyle = 'prota';
+        if (p.avatar.hairStyle !== 'curly') {
+          p.avatar.hairStyle = 'prota';
+        }
       }
       return p;
     });

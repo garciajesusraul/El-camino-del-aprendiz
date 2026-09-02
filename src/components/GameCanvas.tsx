@@ -267,11 +267,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       }
     } else if (state.currentScene === 'HOUSE') {
-      // Acceso hábitos vía computadora del escritorio (no biblioteca) — monitor 83,151,60,39 + teclado
+      // Acceso hábitos vía computadora del escritorio — hitbox alineado con render (mx= deskX+s36, 48x36) + padding generoso
       {
         const deskX = 35; const scale = 1.5; const s = (n:number)=>Math.round(n*scale);
-        const mx = deskX + s(32); const my = 175 - s(16); const monitorW = s(40); const monitorH = s(26);
-        const inComputer = (cx >= mx-4 && cx <= mx + monitorW + 4 && cy >= my-4 && cy <= my + monitorH + 4) || (cx >= deskX && cx <= deskX + s(98) && cy >= 175 + s(12) && cy <= 175 + s(20));
+        const mx = deskX + s(36); const my = 175 - s(16); const monitorW = s(32); const monitorH = s(24);
+        // hitbox monitor con padding + teclado/escritorio como fallback
+        const inComputer = (cx >= mx-8 && cx <= mx + monitorW + 8 && cy >= my-8 && cy <= my + monitorH + 12) || (cx >= deskX - 4 && cx <= deskX + s(98) + 8 && cy >= 175 + s(10) && cy <= 175 + s(22));
         if (inComputer) {
           sound.playSelect();
           if (onOpenHabitsBoard) onOpenHabitsBoard();

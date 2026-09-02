@@ -291,13 +291,6 @@ export class PixelArtRenderer {
     // 5. Wall Decorations: Space / Unicorn Posters, Corkboard & Floating Shelves
     this.renderKidWallDecorations(ctx, isGirl);
 
-    // 5b. Cuadro grande HABITOS en la pared central (interactivo) - configurable desde Ajustes & PIN
-    {
-      const bw = Math.max(80, Math.min(260, Math.round(habitBoardWidth ?? 140)));
-      const bh = Math.max(40, Math.min(160, Math.round(habitBoardHeight ?? 72)));
-      this.renderHabitBoard(ctx, 330, 38, bw, bh, isGirl);
-    }
-
     // 6. Kid's Creative & Homework Desk on the Left Wall
     this.renderKidDesk(ctx, 35, 175, isGirl);
 
@@ -2526,7 +2519,8 @@ export class PixelArtRenderer {
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(px + pWidth / 2 + 3, py + 9 + walkBob, 1.5, 1.5);
       }
-    } else {
+    } else if (profile.avatar.hairStyle === 'curly') {
+      // Varón curly: rulos visibles (opción B) - no tapado por Prota
       const hairBase = profile.avatar.hairColor || "#18181b";
       const hairShade = "#27272a";
       const hairHighlight = "#3f3f46";
@@ -2619,8 +2613,8 @@ export class PixelArtRenderer {
       }
     }
 
-    // --- OVERRIDE: Cabeza estilo PixelAvatar perfil (pedido: estética idéntica a avatar de perfil) ---
-    {
+    // --- OVERRIDE: Cabeza estilo PixelAvatar perfil (opción B: Prota solo si no es curly) ---
+    if (isGirl || profile.avatar.hairStyle !== 'curly') {
       const avScale = pWidth / 24;
       const ax = px;
       const ay = py + walkBob;
@@ -2648,8 +2642,26 @@ export class PixelArtRenderer {
         // mejillas
         drawRect(6,13,2,1,'rgba(244,63,94,0.6)');
         drawRect(16,13,2,1,'rgba(244,63,94,0.6)');
-        // sonrisa
-        drawRect(11,14,2,1,'#881337');
+        // ojos con giro según facing
+        if (facing === 'left') {
+          drawRect(7,11,2,3,'#0f172a'); drawRect(7,11,1,1,'#ffffff');
+          // ojo derecho oculto de perfil
+          drawRect(6,13,2,1,'rgba(244,63,94,0.6)');
+        } else if (facing === 'right') {
+          drawRect(15,11,2,3,'#0f172a'); drawRect(15,11,1,1,'#ffffff');
+          drawRect(17,13,2,1,'rgba(244,63,94,0.6)');
+        } else if (facing === 'up') {
+          drawRect(8,10,2,2,'#0f172a'); drawRect(8,10,1,1,'#ffffff');
+          drawRect(14,10,2,2,'#0f172a'); drawRect(14,10,1,1,'#ffffff');
+        } else {
+          drawRect(8,11,2,3,'#0f172a'); drawRect(8,11,1,1,'#ffffff');
+          drawRect(14,11,2,3,'#0f172a'); drawRect(14,11,1,1,'#ffffff');
+          drawRect(6,13,2,1,'rgba(244,63,94,0.6)');
+          drawRect(16,13,2,1,'rgba(244,63,94,0.6)');
+        }
+        // sonrisa (solo frente y lateral sutil)
+        if (facing === 'down') drawRect(11,14,2,1,'#881337');
+        else if (facing === 'up') {} else drawRect(11,13,1,1,'#881337');
       } else {
         const primaryHair = profile.avatar.hairColor || '#18181b';
         const highlightHair = '#3f3f46';
@@ -2674,15 +2686,27 @@ export class PixelArtRenderer {
         drawRect(11,7,4,2,primaryHair);
         drawRect(15,7,4,4,primaryHair);
         drawRect(16,11,2,1,primaryHair);
-        // ojos
-        drawRect(7,11,2,3,'#09090b'); drawRect(7,11,1,1,'#ffffff');
-        drawRect(15,11,2,3,'#09090b'); drawRect(15,11,1,1,'#ffffff');
-        // mejillas
-        drawRect(5,13,2,1,'rgba(244,114,182,0.55)');
-        drawRect(17,13,2,1,'rgba(244,114,182,0.55)');
-        // sonrisa
-        drawRect(11,13,2,1,'#5c2c16');
-        drawRect(11,15,2,1,'#6b3614');
+        // ojos con giro según facing (prota)
+        if (facing === 'left') {
+          drawRect(7,11,2,3,'#09090b'); drawRect(7,11,1,1,'#ffffff');
+          drawRect(5,13,2,1,'rgba(244,114,182,0.55)');
+          // flequillo lateral ajustado
+          drawRect(9,7,2,1,primaryHair);
+        } else if (facing === 'right') {
+          drawRect(15,11,2,3,'#09090b'); drawRect(15,11,1,1,'#ffffff');
+          drawRect(17,13,2,1,'rgba(244,114,182,0.55)');
+          drawRect(11,7,2,1,primaryHair);
+        } else if (facing === 'up') {
+          drawRect(8,10,2,2,'#09090b'); drawRect(8,10,1,1,'#ffffff');
+          drawRect(14,10,2,2,'#09090b'); drawRect(14,10,1,1,'#ffffff');
+        } else {
+          drawRect(7,11,2,3,'#09090b'); drawRect(7,11,1,1,'#ffffff');
+          drawRect(15,11,2,3,'#09090b'); drawRect(15,11,1,1,'#ffffff');
+          drawRect(5,13,2,1,'rgba(244,114,182,0.55)');
+          drawRect(17,13,2,1,'rgba(244,114,182,0.55)');
+          drawRect(11,13,2,1,'#5c2c16');
+          drawRect(11,15,2,1,'#6b3614');
+        }
       }
     }
 

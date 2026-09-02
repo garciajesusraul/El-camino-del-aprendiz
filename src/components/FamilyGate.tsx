@@ -28,7 +28,6 @@ export function FamilyGate({ onEnter }: { onEnter: (code: string) => void }) {
     <div className="min-h-screen w-screen flex items-center justify-center bg-slate-950 p-4">
       <div className="w-full max-w-md bg-slate-900 border-2 border-amber-500/60 rounded-3xl shadow-[0_16px_60px_rgba(0,0,0,0.8)] p-6">
         <div className="text-center mb-4">
-          <div className="text-4xl mb-2">🦁 📚</div>
           <h1 className="text-xl font-black text-amber-300">El camino del aprendiz</h1>
           <p className="text-xs text-slate-400 mt-1">Ingresa el código de tu familia para entrar</p>
         </div>
