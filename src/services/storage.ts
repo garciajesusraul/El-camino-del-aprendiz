@@ -1208,7 +1208,8 @@ function isRedemptionAllowed(state: AppState, item: StoreItem, userId: string): 
   let count = 0;
   if (item.redeemPeriod === 'per_week') {
     const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay());
+    const daysSinceMonday = (now.getDay() + 6) % 7; // Lunes inicio (Uruguay/Argentina)
+    weekStart.setDate(now.getDate() - daysSinceMonday);
     weekStart.setHours(0, 0, 0, 0);
     count = reds.filter((r) => new Date(r.redeemedAt) >= weekStart).length;
   } else if (item.redeemPeriod === 'per_month') {

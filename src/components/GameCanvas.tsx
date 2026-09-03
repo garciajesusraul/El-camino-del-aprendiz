@@ -1197,11 +1197,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               sound.playSelect();
               setShowControlsMenu(true);
             }}
-            className="flex items-center gap-2 bg-slate-950/75 hover:bg-slate-900/90 border border-amber-500/60 hover:border-amber-400 shadow-2xl px-3.5 py-2 rounded-2xl text-amber-300 backdrop-blur-md transition-all active:scale-95 cursor-pointer group"
+            className="flex items-center gap-1.5 bg-slate-950/75 hover:bg-slate-900/90 border border-amber-500/60 hover:border-amber-400 shadow-2xl px-2.5 py-1.5 rounded-2xl text-amber-300 backdrop-blur-md transition-all active:scale-95 cursor-pointer group"
           >
-            <Gamepad2 className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
-            <span className="text-xs font-bold tracking-wide text-slate-200">Controles</span>
-            <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono font-bold">[C]</span>
+            <Gamepad2 className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
+            <span className="text-[11px] font-bold tracking-wide text-slate-200">Controles</span>
+            <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1 py-0.5 rounded font-mono font-bold">[C]</span>
           </button>
         )}
 
@@ -1211,32 +1211,21 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             id="panel-controls-dropdown"
             className="bg-slate-950/85 border-2 border-amber-500/80 rounded-3xl p-3 sm:p-4 shadow-[0_12px_40px_rgba(0,0,0,0.85)] backdrop-blur-xl text-white w-[285px] sm:w-[340px] max-h-[62vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150"
           >
-            {/* Header with Switch Side & Close */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
-              <div className="flex items-center gap-2">
-                <Gamepad2 className="w-4 h-4 text-amber-400" />
-                <span className="text-xs font-black uppercase tracking-wider text-amber-300">
-                  Controles del Juego
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1.5">
-                {/* Switch left / right position */}
-                <button
-                  onClick={() => setControlsPosition((prev) => (prev === 'right' ? 'left' : 'right'))}
-                  className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded-lg border border-slate-600 transition-colors cursor-pointer"
-                  title="Cambiar lado (Izquierda / Derecha)"
-                >
-                  {controlsPosition === 'right' ? '◀ A la Izquierda' : 'A la Derecha ▶'}
-                </button>
-
-                <button
-                  onClick={() => setShowControlsMenu(false)}
-                  className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+            {/* Header solo cerrar y mover lado - sin titulo */}
+            <div className="flex items-center justify-end gap-1.5 mb-2">
+              <button
+                onClick={() => setControlsPosition((prev) => (prev === 'right' ? 'left' : 'right'))}
+                className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded-lg border border-slate-600 transition-colors cursor-pointer"
+                title="Cambiar lado (Izquierda / Derecha)"
+              >
+                {controlsPosition === 'right' ? '◀' : '▶'}
+              </button>
+              <button
+                onClick={() => setShowControlsMenu(false)}
+                className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
 
@@ -1274,30 +1263,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
                 </span>
               </div>
             </div>
-
-            {/* Quick Action Shortcuts inside controls */}
-            <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between gap-2">
-              <button
-                onClick={() => {
-                  sound.playSelect();
-                  onSceneChange('HOUSE');
-                }}
-                className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold border border-slate-600 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <span>🏠 Ir a Casa</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  sound.playSelect();
-                  onSceneChange('PLAZA');
-                }}
-                className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold border border-slate-600 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <span>⛲ Ir a Plaza</span>
-              </button>
-            </div>
           </div>
+        )}
+        {/* Clic fuera cierra el cuadro */}
+        {showControlsMenu && (
+          <div className="fixed inset-0 z-30" onClick={() => setShowControlsMenu(false)} aria-hidden="true" />
         )}
       </div>
     </div>

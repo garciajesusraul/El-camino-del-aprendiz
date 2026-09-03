@@ -115,13 +115,15 @@ export const StoreModal: React.FC<StoreModalProps> = ({
 
                     <div className="mt-3 pt-3 border-t border-slate-700/60 flex items-center justify-between">
                       <span
-                        className={`text-xs font-black px-2.5 py-1 rounded-xl ${
+                        className={`text-xs font-black px-2.5 py-1 rounded-xl border ${
                           item.costType === 'sabiduria'
-                            ? 'text-sky-300 bg-sky-950/60 border border-sky-700/50'
-                            : 'text-emerald-300 bg-emerald-950/60 border border-emerald-700/50'
+                            ? 'text-sky-300 bg-sky-950/60 border-sky-700/50'
+                            : item.costType === 'coins'
+                            ? 'text-amber-300 bg-amber-950/60 border-amber-700/50'
+                            : 'text-emerald-300 bg-emerald-950/60 border-emerald-700/50'
                         }`}
                       >
-                        {item.cost} {item.costType === 'sabiduria' ? 'Pts Sabiduría' : 'Pts Vida'}
+                        {item.cost} {item.costType === 'sabiduria' ? 'Pts Sabiduría' : item.costType === 'coins' ? 'Monedas 🪙' : 'Pts Vida'}
                       </span>
 
                       <button
@@ -165,8 +167,16 @@ export const StoreModal: React.FC<StoreModalProps> = ({
                       </div>
 
                       <div className="mt-3 pt-3 border-t border-slate-700/60 flex items-center justify-between">
-                        <span className="text-xs font-black text-amber-300 bg-amber-950/60 border border-amber-700/50 px-2.5 py-1 rounded-xl">
-                          {item.cost} Monedas 🪙
+                        <span
+                          className={`text-xs font-black px-2.5 py-1 rounded-xl border ${
+                            item.costType === 'sabiduria'
+                              ? 'text-sky-300 bg-sky-950/60 border-sky-700/50'
+                              : item.costType === 'coins'
+                              ? 'text-amber-300 bg-amber-950/60 border-amber-700/50'
+                              : 'text-emerald-300 bg-emerald-950/60 border-emerald-700/50'
+                          }`}
+                        >
+                          {item.cost} {item.costType === 'sabiduria' ? 'Pts Sabiduría' : item.costType === 'coins' ? 'Monedas 🪙' : 'Pts Vida'}
                         </span>
 
                         {isOwned ? (
