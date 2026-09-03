@@ -692,15 +692,13 @@ export default function App() {
 
       {/* Modal Hábitos - interactivo desde cuadro HABITOS en Casa */}
       {showHabitsBoard && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 animate-fade-in select-none">
-          <div className="relative w-full max-w-2xl max-h-[92vh] flex flex-col bg-slate-900 border-2 border-emerald-500/90 rounded-3xl shadow-[0_16px_60px_rgba(0,0,0,0.85)] overflow-hidden">
-            <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-950 p-4 border-b border-emerald-500/40 flex items-center justify-between">
-              <h3 className="text-base font-black text-emerald-300 flex items-center gap-2"><span className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-400 flex items-center justify-center">🖼️</span> Cuadro de Hábitos</h3>
-              <button onClick={() => setShowHabitsBoard(false)} className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center border border-slate-700">✕</button>
-            </div>
-            <div className="p-4 overflow-y-auto">
-              <HabitsBoard state={state} onToggleHabit={handleToggleHabit} onClose={() => setShowHabitsBoard(false)} />
-            </div>
+        <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col animate-fade-in select-none">
+          <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-950 p-3 border-b border-emerald-500/40 flex items-center justify-between shrink-0">
+            <h3 className="text-sm font-bold text-emerald-300 flex items-center gap-2"><span className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-400 flex items-center justify-center text-sm">🖼️</span> Cuadro de Hábitos</h3>
+            <button onClick={() => setShowHabitsBoard(false)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center border border-slate-700">✕</button>
+          </div>
+          <div className="flex-1 overflow-hidden p-3 flex flex-col">
+            <HabitsBoard state={state} onToggleHabit={handleToggleHabit} onClose={() => setShowHabitsBoard(false)} />
           </div>
         </div>
       )}

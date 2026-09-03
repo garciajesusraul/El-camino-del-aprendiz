@@ -86,13 +86,16 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     setSoundActive(state.settings.soundEnabled !== false);
   }, [state.settings.soundEnabled]);
 
-  // Keys ref to avoid re-render lag
+  // Keys ref to avoid re-render lag + stateRef to avoid loop restart on every state change (slow PC fix)
   const keysRef = useRef<{ [key: string]: boolean }>({});
   const playerRef = useRef(player);
   playerRef.current = player;
-  const walkEnterFramesRef = useRef<{ key: string; frames: number } | null>(null);
+  const stateRef = useRef(state);
+  useEffect(() => { stateRef.current = state; }, [state]);
+  const walkEnterFramesRef = useRef<{ key: string; startMs: number } | null>(null);
   const lastWalkTriggerRef = useRef<string | null>(null);
   const walkSuppressUntilRef = useRef<number>(0);
+  const lastFrameTimeRef = useRef<number>(performance.now());
 
   // Listen to browser fullscreen changes
   useEffect(() => {
@@ -616,25 +619,32 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     if (!ctx) return;
 
     const gameLoop = () => {
-      // 1. UPDATE PHYSICS (only if dialogue is not blocking)
+      // 1. UPDATE PHYSICS (only if dialogue is not blocking) - use stateRef for slow PC (no restart on state change)
+      const state = stateRef.current;
       const keys = keysRef.current;
       let dx = 0;
       let dy = 0;
       let newFacing = playerRef.current.facing;
       let isMoving = false;
 
+      // A) velocidad por reloj: mismo avance a 15fps que a 60fps (PC lenta fix) - original A+C
+      const nowMsLoop = performance.now();
+      const deltaMs = Math.min(100, nowMsLoop - lastFrameTimeRef.current);
+      lastFrameTimeRef.current = nowMsLoop;
+      const dt = deltaMs / 16.67; // 1.0 a 60fps, ~4.0 a 15fps, hasta 6.0 si muy lenta
+
       if (isPaused) {
         // Pausado: no mueve, no cuenta como activo
         isMoving = false;
       } else if (!activeDialogue) {
-        // Movement: Arrows or WASD (Arrow keys take priority)
+        // Movement: Arrows or WASD (Arrow keys take priority) - escalado por dt
         if (keys['ArrowUp'] || keys['w'] || keys['KeyW']) {
-          dy -= playerRef.current.speed;
+          dy -= playerRef.current.speed * dt;
           newFacing = 'up';
           isMoving = true;
         }
         if (keys['ArrowDown'] || keys['s'] || keys['KeyS']) {
-          dy += playerRef.current.speed;
+          dy += playerRef.current.speed * dt;
           newFacing = 'down';
           isMoving = true;
         }
@@ -642,12 +652,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           // Handled via Left Arrow
         }
         if (keys['ArrowLeft']) {
-          dx -= playerRef.current.speed;
+          dx -= playerRef.current.speed * dt;
           newFacing = 'left';
           isMoving = true;
         }
         if (keys['ArrowRight']) {
-          dx += playerRef.current.speed;
+          dx += playerRef.current.speed * dt;
           newFacing = 'right';
           isMoving = true;
         }
@@ -862,19 +872,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             promptText = '↔️ Aleja al personaje de la puerta para volver a entrar';
           }
         } else if (walkKey && walkAction) {
-          const prev = walkEnterFramesRef.current;
-          if (prev && prev.key === walkKey) {
-            prev.frames++;
-            if (prev.frames > 11) {
-              walkEnterFramesRef.current = null;
-              lastWalkTriggerRef.current = walkKey;
-              walkSuppressUntilRef.current = Date.now() + 1400;
-              const actionToRun = walkAction;
-              setTimeout(() => actionToRun(), 0);
-            }
-          } else {
-            walkEnterFramesRef.current = { key: walkKey, frames: 1 };
-          }
+          // C) Auto-entrada caminando desactivada: solo [A]/click entra (evita traba cada 3 pasos en PC lenta)
+          walkEnterFramesRef.current = null;
+          // No auto-trigger, solo deja promptText para [A]
         } else {
           walkEnterFramesRef.current = null;
         }
@@ -946,7 +946,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     animId = requestAnimationFrame(gameLoop);
     return () => cancelAnimationFrame(animId);
-  }, [state, activeDialogue, getEffectiveSeason, isPaused, onActivity]);
+  }, [activeDialogue, getEffectiveSeason, isPaused, onActivity]);
 
   return (
     <div className="relative w-full h-full flex items-center justify-center select-none overflow-hidden bg-slate-950">

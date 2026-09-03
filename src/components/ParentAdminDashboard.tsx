@@ -187,6 +187,7 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [customStartKm, setCustomStartKm] = useState(state.profile.startKm || 0);
   const [customKmGanados, setCustomKmGanados] = useState(state.profile.kmGanados);
+  useEffect(() => { setCustomStartKm(state.profile.startKm || 0); setCustomKmGanados(state.profile.kmGanados); }, [state.profile.id, state.profile.startKm, state.profile.kmGanados]);
 
   const currentScoring = state.settings?.scoring || DEFAULT_SCORING_CONFIG;
   const [scoringInput, setScoringInput] = useState<ScoringConfig>({ ...currentScoring });
@@ -2307,7 +2308,20 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
                   </div>
                 </div>
 
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => {
+                      if (confirm(`¿Reiniciar KM de ${state.profile.name} a 0?`)) {
+                        setCustomStartKm(0);
+                        setCustomKmGanados(0);
+                        onUpdateKmSettings(0, 0);
+                        alert('¡KM reiniciados a 0!');
+                      }
+                    }}
+                    className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 font-black text-xs rounded-xl shadow cursor-pointer border border-slate-600"
+                  >
+                    ↺ Reiniciar a 0
+                  </button>
                   <button
                     onClick={() => {
                       onUpdateKmSettings(customStartKm, customKmGanados);
