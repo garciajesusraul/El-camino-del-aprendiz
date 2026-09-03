@@ -1128,8 +1128,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           </div>
         )}
 
-        {/* Top-Right Vertical Tool Bar: Fullscreen - Sonido - Pausa */}
-        <div className="absolute top-3 right-3 flex flex-col items-center gap-2 z-30">
+        {/* Top-Right Vertical Tool Bar: Fullscreen - Sonido - Pausa - 30% mas chico en celular */}
+        <div className="absolute top-3 right-3 flex flex-col items-center gap-2 z-30 scale-[0.7] md:scale-100 origin-top-right">
           <button
             onClick={toggleFullscreen}
             className="w-11 h-11 bg-slate-950/85 hover:bg-slate-900 text-white rounded-xl border-2 border-amber-500/70 backdrop-blur-md shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
@@ -1183,11 +1183,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         )}
       </div>
 
-      {/* --- BOTTOM COLLAPSIBLE TRANSPARENT CONTROLS MENU (RIGHT OR LEFT) --- */}
+      {/* --- BOTTOM COLLAPSIBLE TRANSPARENT CONTROLS MENU (RIGHT OR LEFT) - 30% mas chico en celular --- */}
       <div
         className={`absolute bottom-3 ${
           controlsPosition === 'right' ? 'right-3' : 'left-3'
-        } z-40 select-none`}
+        } z-40 select-none scale-[0.7] md:scale-100 origin-bottom-right`}
       >
         {/* Collapsed Trigger Button */}
         {!showControlsMenu && (
@@ -1209,7 +1209,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         {showControlsMenu && (
           <div
             id="panel-controls-dropdown"
-            className="bg-slate-950/85 border-2 border-amber-500/80 rounded-3xl p-4 shadow-[0_12px_40px_rgba(0,0,0,0.85)] backdrop-blur-xl text-white w-[310px] sm:w-[350px] animate-in fade-in slide-in-from-bottom-2 duration-150"
+            className="bg-slate-950/85 border-2 border-amber-500/80 rounded-3xl p-3 sm:p-4 shadow-[0_12px_40px_rgba(0,0,0,0.85)] backdrop-blur-xl text-white w-[285px] sm:w-[340px] max-h-[62vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150"
           >
             {/* Header with Switch Side & Close */}
             <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
@@ -1239,80 +1239,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               </div>
             </div>
 
-            {/* Virtual On-Screen Gamepad for Touch or Quick Clicks */}
-            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 mb-3">
-              <div className="flex items-center justify-between">
-                {/* Virtual D-Pad */}
-                <div className="flex flex-col items-center">
-                  <button
-                    onPointerDown={() => handleVirtualDirDown('ArrowUp')}
-                    onPointerUp={() => handleVirtualDirUp('ArrowUp')}
-                    onPointerLeave={() => handleVirtualDirUp('ArrowUp')}
-                    className="w-9 h-9 bg-slate-800 active:bg-amber-600 hover:bg-slate-700 text-amber-300 font-bold rounded-lg border border-slate-600 flex items-center justify-center transition-transform active:scale-90 touch-none select-none cursor-pointer"
-                  >
-                    ▲
-                  </button>
-                  <div className="flex items-center gap-1 my-1">
-                    <button
-                      onPointerDown={() => handleVirtualDirDown('ArrowLeft')}
-                      onPointerUp={() => handleVirtualDirUp('ArrowLeft')}
-                      onPointerLeave={() => handleVirtualDirUp('ArrowLeft')}
-                      className="w-9 h-9 bg-slate-800 active:bg-amber-600 hover:bg-slate-700 text-amber-300 font-bold rounded-lg border border-slate-600 flex items-center justify-center transition-transform active:scale-90 touch-none select-none cursor-pointer"
-                    >
-                      ◀
-                    </button>
-                    <div className="w-9 h-9 bg-slate-950 rounded-lg flex items-center justify-center text-slate-600 text-xs font-mono">
-                      +
-                    </div>
-                    <button
-                      onPointerDown={() => handleVirtualDirDown('ArrowRight')}
-                      onPointerUp={() => handleVirtualDirUp('ArrowRight')}
-                      onPointerLeave={() => handleVirtualDirUp('ArrowRight')}
-                      className="w-9 h-9 bg-slate-800 active:bg-amber-600 hover:bg-slate-700 text-amber-300 font-bold rounded-lg border border-slate-600 flex items-center justify-center transition-transform active:scale-90 touch-none select-none cursor-pointer"
-                    >
-                      ▶
-                    </button>
-                  </div>
-                  <button
-                    onPointerDown={() => handleVirtualDirDown('ArrowDown')}
-                    onPointerUp={() => handleVirtualDirUp('ArrowDown')}
-                    onPointerLeave={() => handleVirtualDirUp('ArrowDown')}
-                    className="w-9 h-9 bg-slate-800 active:bg-amber-600 hover:bg-slate-700 text-amber-300 font-bold rounded-lg border border-slate-600 flex items-center justify-center transition-transform active:scale-90 touch-none select-none cursor-pointer"
-                  >
-                    ▼
-                  </button>
-                </div>
 
-                {/* Virtual Action Buttons A & B */}
-                <div className="flex items-center gap-2.5">
-                  <div className="flex flex-col items-center gap-1">
-                    <button
-                      onClick={() => {
-                        sound.playSelect();
-                        handleBackNavigation();
-                      }}
-                      className="w-11 h-11 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white font-black text-sm rounded-2xl border-2 border-rose-300 shadow flex items-center justify-center transition-transform active:scale-90 cursor-pointer"
-                    >
-                      B
-                    </button>
-                    <span className="text-[10px] text-slate-400 font-bold">Volver</span>
-                  </div>
-
-                  <div className="flex flex-col items-center gap-1">
-                    <button
-                      onClick={() => {
-                        sound.playSelect();
-                        checkActionTrigger();
-                      }}
-                      className="w-12 h-12 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-black text-base rounded-2xl border-2 border-emerald-300 shadow flex items-center justify-center transition-transform active:scale-90 cursor-pointer"
-                    >
-                      A
-                    </button>
-                    <span className="text-[10px] text-emerald-300 font-bold">Entrar</span>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             {/* Keyboard Cheat-Sheet */}
             <div className="space-y-1.5 text-xs">

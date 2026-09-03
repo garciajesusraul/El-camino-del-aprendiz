@@ -5,9 +5,10 @@ import { sound } from '../services/audio';
 interface LeonPomodoroProps {
   pomodoroMinutes: number; // por perfil
   onComplete?: () => void;
+  joystickEnabled?: boolean;
 }
 
-export const LeonPomodoro: React.FC<LeonPomodoroProps> = ({ pomodoroMinutes, onComplete }) => {
+export const LeonPomodoro: React.FC<LeonPomodoroProps> = ({ pomodoroMinutes, onComplete, joystickEnabled }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [remainingSec, setRemainingSec] = useState(pomodoroMinutes * 60);
   const [running, setRunning] = useState(false);
@@ -55,11 +56,11 @@ export const LeonPomodoro: React.FC<LeonPomodoroProps> = ({ pomodoroMinutes, onC
 
   return (
     <>
-      {/* LEON avatar - bottom left - subido 2cm (~76px) para no tapar cartel [B]/[A] */}
+      {/* LEON avatar - bottom left - 30% mas chico en celular, mas arriba si joystick transparente activo */}
       <button
         onClick={() => { setIsOpen(true); sound.playSelect(); }}
         title={`LEON 🐶 Pomodoro ${pomodoroMinutes} min - ¡Click para estudiar!`}
-        className="fixed bottom-[76px] left-3 z-30 w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-amber-800 to-amber-950 border-2 border-amber-400 shadow-[0_6px_24px_rgba(0,0,0,0.5)] flex items-center justify-center text-2xl sm:text-3xl hover:scale-105 active:scale-95 transition-transform cursor-pointer select-none"
+        className={`fixed ${joystickEnabled ? 'bottom-[145px] md:bottom-[76px]' : 'bottom-[76px]'} left-3 z-30 w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-amber-800 to-amber-950 border-2 border-amber-400 shadow-[0_6px_24px_rgba(0,0,0,0.5)] flex items-center justify-center text-2xl sm:text-3xl hover:scale-105 active:scale-95 transition-transform cursor-pointer select-none scale-[0.7] md:scale-100 origin-bottom-left`}
       >
         {/* brown dog */}
         <span className="text-[28px] sm:text-[32px] leading-none">🐶</span>

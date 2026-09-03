@@ -32,9 +32,9 @@ export const VirtualJoystick: React.FC<VirtualJoystickProps> = ({ enabled }) => 
   });
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 pointer-events-none select-none">
+    <div className="fixed inset-x-0 bottom-0 z-30 pointer-events-none select-none scale-[0.85] md:scale-100 origin-bottom-center">
       {/* Contenedor transparente - no tapa la pantalla, solo botones semi-transparentes */}
-      <div className="flex items-end justify-between px-3 pb-3 pt-6 bg-transparent pointer-events-none">
+      <div className="flex items-end justify-between px-3 pb-3 pt-4 bg-transparent pointer-events-none">
         {/* D-PAD izquierda - flechas */}
         <div className="pointer-events-auto flex flex-col items-center gap-1.5">
           <button

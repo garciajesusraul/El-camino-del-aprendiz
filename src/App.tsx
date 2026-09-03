@@ -643,7 +643,7 @@ export default function App() {
         />
       </main>
       {/* LEON perro marrón - bottom left, pomodoro 20 min por perfil */}
-      <LeonPomodoro pomodoroMinutes={state.profile.pomodoroMinutes ?? 20} onComplete={() => { /* celebration handled inside */ }} />
+      <LeonPomodoro pomodoroMinutes={state.profile.pomodoroMinutes ?? 20} joystickEnabled={!!state.settings.virtualJoystickEnabled} onComplete={() => { /* celebration handled inside */ }} />
       {/* Joystick virtual transparente para celular */}
       <VirtualJoystick enabled={!!state.settings.virtualJoystickEnabled} />
 
