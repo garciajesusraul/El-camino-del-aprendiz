@@ -23,9 +23,16 @@ export function SuperAdminPanel({ onClose }: { onClose: () => void }) {
     try { setFamilies(await fetchFamilies()); } catch (e: any) { setErr(e?.message || String(e)); } finally { setLoading(false); }
   };
 
-  const handleAuth = () => {
-    if (checkSuperadminPassword(pass)) { setAuthed(true); setPassError(null); }
-    else setPassError('Contraseña incorrecta');
+  const [authLoading, setAuthLoading] = useState(false);
+  const handleAuth = async () => {
+    setAuthLoading(true); setPassError(null);
+    try {
+      const ok = await checkSuperadminPassword(pass);
+      if (ok) { setAuthed(true); setPassError(null); }
+      else setPassError('Contraseña incorrecta');
+    } catch (e: any) {
+      setPassError(e?.message || 'Error verificando');
+    } finally { setAuthLoading(false); }
   };
 
   const handleCreate = async () => {
@@ -66,10 +73,9 @@ export function SuperAdminPanel({ onClose }: { onClose: () => void }) {
               <p className="text-xs text-slate-300 mb-2">Ingresa la contraseña de SUPERADMIN para gestionar familias.</p>
               <div className="flex gap-2">
                 <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} placeholder="Contraseña" className="flex-1 px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-violet-500" autoFocus />
-                <button onClick={handleAuth} className="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-black text-sm cursor-pointer">Entrar</button>
+                <button onClick={handleAuth} disabled={authLoading} className="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-black text-sm cursor-pointer">{authLoading ? 'Verificando...' : 'Entrar'}</button>
               </div>
               {passError && <p className="text-xs text-red-300 mt-2">{passError}</p>}
-              <p className="text-[11px] text-slate-500 mt-2">Pista: uruguay (minúsculas)</p>
             </div>
           ) : (
             <>

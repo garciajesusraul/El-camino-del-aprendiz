@@ -13,6 +13,11 @@ import {
   unlockAllCities,
   parseAndImportTasksFromText,
   importTasksStructured,
+  approveWeek,
+  approveBimestre,
+  unapproveWeek,
+  unapproveBimestre,
+  configureGameStart,
   toggleMedalEnabled,
   upsertMedalDefinition,
   deleteMedalDefinition,
@@ -37,8 +42,10 @@ import {
   updateUserPoints,
   canRedeemReward,
   redeemReward,
+  updateVirtualJoystick,
 } from './services/storage';
 import { HeaderHUD } from './components/HeaderHUD';
+import { VirtualJoystick } from './components/VirtualJoystick';
 import { GameCanvas } from './components/GameCanvas';
 import { MissionNotebookModal } from './components/MissionNotebookModal';
 import { ParentAdminDashboard } from './components/ParentAdminDashboard';
@@ -304,6 +311,28 @@ export default function App() {
 
   const handleExecuteWeekPass = () => {
     setState((prev) => executeWeekPass(prev));
+  };
+
+  const handleApproveWeek = (materiaId: string, bimestre: number, semana: number) => {
+    if (!confirm(`¿Aprobar toda la Semana ${semana} de Bimestre ${bimestre}? Se darán los puntos y premios.`)) return;
+    setState((prev) => approveWeek(prev, materiaId, bimestre, semana));
+  };
+  const handleApproveBimestre = (materiaId: string, bimestre: number) => {
+    if (!confirm(`¿Aprobar todo el Bimestre ${bimestre} (${materiaId})? Son 8 semanas. Se darán los puntos y premios.`)) return;
+    setState((prev) => approveBimestre(prev, materiaId, bimestre));
+  };
+  const handleUnapproveWeek = (materiaId: string, bimestre: number, semana: number) => {
+    if (!confirm(`¿Desmarcar la Semana ${semana}? Se quitarán los puntos dados y vuelve a pendiente. ¿Seguro?`)) return;
+    setState((prev) => unapproveWeek(prev, materiaId, bimestre, semana));
+  };
+  const handleUnapproveBimestre = (materiaId: string, bimestre: number) => {
+    if (!confirm(`¿Desmarcar todo el Bimestre ${bimestre}? Se quitarán los puntos. ¿Seguro?`)) return;
+    setState((prev) => unapproveBimestre(prev, materiaId, bimestre));
+  };
+  const handleConfigureGameStart = (bimestre: number, semana: number, grantPoints: boolean) => {
+    const puntosTxt = grantPoints ? 'SÍ se darán puntos y premios por lo anterior' : 'NO se darán puntos (arranca de cero)';
+    if (!confirm(`¿Configurar inicio en Bimestre ${bimestre} Semana ${semana}? ${puntosTxt}. ¿Seguro?`)) return;
+    setState((prev) => configureGameStart(prev, bimestre, semana, grantPoints));
   };
 
   const handleUnlockAllCities = () => {
@@ -572,6 +601,7 @@ export default function App() {
     setTimeout(() => setCloudStatus(''), 2000);
   };
   const handleTogglePause = () => setIsPaused((prev) => !prev);
+  const handleToggleJoystick = (enabled: boolean) => setState((prev) => updateVirtualJoystick(prev, enabled));
 
   if (!familyCode) {
     return <FamilyGate onEnter={handleFamilyEnter} />;
@@ -614,6 +644,8 @@ export default function App() {
       </main>
       {/* LEON perro marrón - bottom left, pomodoro 20 min por perfil */}
       <LeonPomodoro pomodoroMinutes={state.profile.pomodoroMinutes ?? 20} onComplete={() => { /* celebration handled inside */ }} />
+      {/* Joystick virtual transparente para celular */}
+      <VirtualJoystick enabled={!!state.settings.virtualJoystickEnabled} />
 
       {/* Pantalla 5: Libreta de Misiones Modal */}
       {showNotebook && (
@@ -678,6 +710,12 @@ export default function App() {
           onUpdateStoreItems={handleUpdateStoreItems}
           onUpdateUserPoints={handleUpdateUserPoints}
           onDeleteTask={handleDeleteTask}
+          onApproveWeek={handleApproveWeek}
+          onApproveBimestre={handleApproveBimestre}
+          onUnapproveWeek={handleUnapproveWeek}
+          onUnapproveBimestre={handleUnapproveBimestre}
+          onToggleJoystick={handleToggleJoystick}
+          onConfigureGameStart={handleConfigureGameStart}
         />
       )}
 

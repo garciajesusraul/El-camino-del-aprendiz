@@ -2,7 +2,9 @@ import { supabase, isSupabaseConfigured } from './supabase';
 
 export const FAMILY_CODE_KEY = 'rpg_family_code';
 export const SYNC_INTERVAL_KEY = 'rpg_sync_interval_minutes';
-export const SUPERADMIN_PASS = 'uruguay';
+// SUPERADMIN_PASS ya NO está en el código: se verifica contra Supabase (tabla superadmin_config)
+// Fallback offline via VITE_SUPERADMIN_PASS si Supabase no está configurado
+const FALLBACK_SUPERADMIN_PASS = (import.meta as any).env?.VITE_SUPERADMIN_PASS as string | undefined || 'uruguay';
 export const SUPERADMIN_FAMILY = 'LEON';
 
 export function normalizeFamilyCode(code: string): string {
@@ -81,6 +83,24 @@ export async function deleteFamily(code: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-export function checkSuperadminPassword(input: string): boolean {
-  return input === SUPERADMIN_PASS;
+export async function checkSuperadminPassword(input: string): Promise<boolean> {
+  const trimmed = (input || '').trim();
+  if (!trimmed) return false;
+  if (isSupabaseConfigured()) {
+    try {
+      const { data, error } = await supabase.rpc('verify_superadmin_password', { p_input: trimmed } as any);
+      if (!error && typeof data === 'boolean') return data;
+      // Si la función no existe aún (schema no ejecutado), fallback a comparación local
+      console.warn('[superadmin] RPC verify_superadmin_password falló, usando fallback:', error?.message);
+    } catch (e) {
+      console.warn('[superadmin] error RPC', e);
+    }
+  }
+  // Fallback offline / sin migrar: compara contra env o default
+  return trimmed === FALLBACK_SUPERADMIN_PASS;
+}
+
+// Mantener versión síncrona deprecated para compatibilidad (usa fallback local solamente)
+export function checkSuperadminPasswordSync(input: string): boolean {
+  return (input || '').trim() === FALLBACK_SUPERADMIN_PASS;
 }

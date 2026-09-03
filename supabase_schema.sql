@@ -189,7 +189,39 @@ create table if not exists public.app_state_snapshots (
   updated_at timestamptz default now()
 );
 
--- RLS: desactivado por ahora (pediste exponer datos)
+-- 14) superadmin_config — contraseña de superadmin guardada en Supabase (no en el código)
+create extension if not exists pgcrypto;
+create table if not exists public.superadmin_config (
+  id int primary key check (id = 1),
+  pass_hash text not null,
+  updated_at timestamptz default now()
+);
+-- hash bcrypt de 'uruguay' generado con crypt('uruguay', gen_salt('bf'))
+insert into public.superadmin_config(id, pass_hash)
+values (1, crypt('uruguay', gen_salt('bf')))
+on conflict (id) do nothing;
+
+-- Función segura para verificar sin exponer el hash (SECURITY DEFINER)
+create or replace function public.verify_superadmin_password(p_input text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  stored_hash text;
+begin
+  select pass_hash into stored_hash from public.superadmin_config where id = 1;
+  if stored_hash is null then return false; end if;
+  return stored_hash = crypt(p_input, stored_hash);
+end;
+$$;
+
+-- Permitir que anon/authenticated puedan EJECUTAR la función pero NO leer la tabla
+revoke all on table public.superadmin_config from anon, authenticated;
+grant execute on function public.verify_superadmin_password(text) to anon, authenticated;
+
+-- RLS: desactivado por ahora (pediste exponer datos) — excepto superadmin_config que queda protegido
 alter table public.families disable row level security;
 alter table public.family_settings disable row level security;
 alter table public.profiles disable row level security;
@@ -203,3 +235,5 @@ alter table public.habit_definitions disable row level security;
 alter table public.habit_logs disable row level security;
 alter table public.play_stats disable row level security;
 alter table public.app_state_snapshots disable row level security;
+alter table public.superadmin_config enable row level security;
+-- Sin políticas = nadie puede hacer SELECT directo; solo la función SECURITY DEFINER puede leer

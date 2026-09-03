@@ -103,6 +103,12 @@ interface ParentAdminDashboardProps {
   onUpsertMedal?: (def: any) => void;
   onDeleteMedal?: (id: string) => void;
   onSetManualMedal?: (id: string, userId: string, active: boolean) => void;
+  onApproveWeek?: (materiaId: string, bimestre: number, semana: number) => void;
+  onApproveBimestre?: (materiaId: string, bimestre: number) => void;
+  onUnapproveWeek?: (materiaId: string, bimestre: number, semana: number) => void;
+  onUnapproveBimestre?: (materiaId: string, bimestre: number) => void;
+  onConfigureGameStart?: (bimestre: number, semana: number, grantPoints: boolean) => void;
+  onToggleJoystick?: (enabled: boolean) => void;
   familyCode?: string | null;
   syncInterval?: number;
   onSyncNow?: () => void;
@@ -160,6 +166,12 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
   onUpsertMedal,
   onDeleteMedal,
   onSetManualMedal,
+  onApproveWeek,
+  onApproveBimestre,
+  onUnapproveWeek,
+  onUnapproveBimestre,
+  onConfigureGameStart,
+  onToggleJoystick,
 }) => {
   // PIN Gate State
   const expectedPin = state.settings?.parentPin || '2026';
@@ -169,7 +181,7 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
 
   // Tabs
   const [activeTab, setActiveTab] = useState<
-    'users' | 'notebook' | 'store' | 'approvals' | 'scoring' | 'import' | 'cities' | 'config' | 'history' | 'medals' | 'habits' | 'informe' | 'promises'
+    'users' | 'notebook' | 'store' | 'approvals' | 'scoring' | 'import' | 'cities' | 'progreso' | 'config' | 'history' | 'medals' | 'habits' | 'informe' | 'promises'
   >('users');
 
   // Theme-aware styles — ahora sí cambia visualmente
@@ -237,6 +249,13 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskPoints, setNewTaskPoints] = useState<number>(10);
   const [newTaskType, setNewTaskType] = useState<'sabiduria' | 'vida'>('sabiduria');
+
+  // Progreso - pase semana/bimestre y desde cuándo arranca
+  const [progMateria, setProgMateria] = useState<string>(isKinder ? KINDER_MATERIA.id : 'matematicas');
+  const [progBimestre, setProgBimestre] = useState<number>(1);
+  const [progSemana, setProgSemana] = useState<number>(1);
+  const [startBimestre, setStartBimestre] = useState<number>(1);
+  const [startSemana, setStartSemana] = useState<number>(1);
 
   // Submitted tasks waiting for parent approval
   const submittedTasks = state.tasks.filter(
@@ -617,6 +636,7 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
               { id: 'informe', label: 'ESTADISTICAS DEL NIÑO/A', icon: FileText, active: 'bg-sky-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'promises', label: 'Promesas de Dios', icon: BookOpen, active: 'bg-amber-600 text-slate-950 shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'cities', label: 'Desbloquear Ciudades', icon: Unlock, active: 'bg-cyan-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
+              { id: 'progreso', label: 'Pases & Inicio', icon: Calendar, active: 'bg-orange-600 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
               { id: 'config', label: 'Ajustes & PIN', icon: Settings, active: 'bg-slate-700 text-white shadow', idle: 'text-slate-300 hover:bg-slate-800' },
             ].map((item) => {
               const Icon = item.icon;
@@ -1919,6 +1939,95 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
           )}
 
           {/* ========================================================================= */}
+          {/* TAB: PASES & INICIO (semana/bimestre sin castigo + desde cuándo arranca) */}
+          {/* ========================================================================= */}
+          {activeTab === 'progreso' && (
+            <div className="space-y-4">
+              <div className="bg-orange-950/40 border border-orange-500/40 rounded-2xl p-4">
+                <h4 className="text-sm font-black text-orange-200 flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-orange-400" /> Pases & Inicio del Juego
+                </h4>
+                <p className="text-xs text-orange-300/80 mt-1">
+                  Aprueba semanas o bimestres completos sin castigar. Antes de hacerlo el sistema pide confirmación. También puedes desmarcar si fue por error (quita los puntos).
+                </p>
+              </div>
+
+              {/* Pase de Semana / Bimestre */}
+              <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-3">
+                <h5 className="text-xs font-black text-white flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Pasar semana o bimestre completo</h5>
+                <p className="text-xs text-slate-400">Elegí materia, bimestre y semana. Sin castigo: da los puntos y premios. Con desmarcar puedes volver atrás y quitar los puntos.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">Materia:</label>
+                    <select value={progMateria} onChange={(e)=> setProgMateria(e.target.value)} className="w-full text-xs p-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-bold">
+                      {isKinder ? <option value={KINDER_MATERIA.id}>🎈 {KINDER_MATERIA.name}</option> : MATERIAS.map(m=> <option key={m.id} value={m.id}>{m.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">Bimestre:</label>
+                    <select value={progBimestre} onChange={(e)=> setProgBimestre(Number(e.target.value))} className="w-full text-xs p-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-bold">
+                      <option value={1}>Bimestre 1</option><option value={2}>Bimestre 2</option><option value={3}>Bimestre 3</option><option value={4}>Bimestre 4</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">Semana:</label>
+                    <select value={progSemana} onChange={(e)=> setProgSemana(Number(e.target.value))} className="w-full text-xs p-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-bold">
+                      {[1,2,3,4,5,6,7,8].map(w=> <option key={w} value={w}>Semana {w}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <button onClick={()=> onApproveWeek && onApproveWeek(progMateria, progBimestre, progSemana)} className="px-3 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow cursor-pointer flex items-center justify-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4" /> Aprobar Semana
+                  </button>
+                  <button onClick={()=> onUnapproveWeek && onUnapproveWeek(progMateria, progBimestre, progSemana)} className="px-3 py-2.5 bg-rose-900/70 hover:bg-rose-800 text-rose-200 font-black text-xs rounded-xl shadow border border-rose-700 cursor-pointer flex items-center justify-center gap-1.5">
+                    <RotateCcw className="w-4 h-4" /> Desmarcar Semana
+                  </button>
+                  <button onClick={()=> onApproveBimestre && onApproveBimestre(progMateria, progBimestre)} className="px-3 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs rounded-xl shadow cursor-pointer flex items-center justify-center gap-1.5">
+                    <Sparkles className="w-4 h-4" /> Aprobar Bimestre
+                  </button>
+                  <button onClick={()=> onUnapproveBimestre && onUnapproveBimestre(progMateria, progBimestre)} className="px-3 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-black text-xs rounded-xl shadow border border-slate-600 cursor-pointer flex items-center justify-center gap-1.5">
+                    <RotateCcw className="w-4 h-4" /> Desmarcar Bimestre
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-500">Tip: Si tocas por error, usa Desmarcar para quitar los puntos dados.</p>
+              </div>
+
+              {/* Desde cuándo arranca */}
+              <div className="bg-slate-800/80 border-2 border-amber-500/40 rounded-2xl p-4 space-y-3">
+                <h5 className="text-xs font-black text-amber-300 flex items-center gap-2"><Compass className="w-4 h-4" /> ¿Desde cuándo arranca el niño?</h5>
+                <p className="text-xs text-slate-400">Si el niño empieza a mitad de año, elegí bimestre y semana de inicio. El sistema te preguntará si lo anterior le da puntos o arranca de cero.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">Bimestre de inicio:</label>
+                    <select value={startBimestre} onChange={(e)=> setStartBimestre(Number(e.target.value))} className="w-full text-xs p-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-bold">
+                      <option value={1}>Bimestre 1</option><option value={2}>Bimestre 2</option><option value={3}>Bimestre 3</option><option value={4}>Bimestre 4</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">Semana de inicio:</label>
+                    <select value={startSemana} onChange={(e)=> setStartSemana(Number(e.target.value))} className="w-full text-xs p-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-bold">
+                      {[1,2,3,4,5,6,7,8].map(w=> <option key={w} value={w}>Semana {w}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button onClick={()=> onConfigureGameStart && onConfigureGameStart(startBimestre, startSemana, true)} className="px-3 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow cursor-pointer">
+                    Iniciar y SÍ dar puntos por lo anterior
+                  </button>
+                  <button onClick={()=> onConfigureGameStart && onConfigureGameStart(startBimestre, startSemana, false)} className="px-3 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-black text-xs rounded-xl shadow border border-slate-600 cursor-pointer">
+                    Iniciar de CERO (sin puntos anteriores)
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-500">Ambas opciones marcan lo anterior como completo y desbloquean el mapa hasta ahí. La diferencia es si le das los puntos y premios o no.</p>
+                <div className="bg-slate-950/60 rounded-xl p-2 text-[11px] text-slate-400">
+                  Actual: {state.profile.name} tiene {state.tasks.filter(t=> t.status==='approved' && (!t.userId || t.userId===state.activeUserId)).length} tareas aprobadas • {state.profile.wisdomPoints} sabiduría + {state.profile.lifePoints} vida
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
           {/* TAB: ÁLBUM DE MEDALLAS (configurable padre) */}
           {/* ========================================================================= */}
           {activeTab === 'medals' && (
@@ -2381,6 +2490,37 @@ export const ParentAdminDashboard: React.FC<ParentAdminDashboardProps> = ({
                       : 'Desactivado (Requiere aprobación del padre)'}
                   </button>
                 </div>
+              </div>
+
+              {/* Joystick Virtual para celular */}
+              <div className="bg-slate-800/80 border border-cyan-500/40 rounded-2xl p-4 space-y-3">
+                <h4 className="text-sm font-black text-cyan-300 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-cyan-600 flex items-center justify-center text-xs">🎮</span>
+                  <span>Joystick Virtual (para celular)</span>
+                  <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full border font-bold ${state.settings.virtualJoystickEnabled ? 'bg-emerald-600 text-white border-emerald-400' : 'bg-slate-700 text-slate-400 border-slate-600'}`}>{state.settings.virtualJoystickEnabled ? 'Activo' : 'Apagado'}</span>
+                </h4>
+                <p className="text-xs text-slate-400">Activa flechas y botones en pantalla para jugar sin teclado. Fondo transparente, no tapa el juego. Botones chicos pero fáciles de tocar.</p>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => onToggleJoystick && onToggleJoystick(!state.settings.virtualJoystickEnabled)}
+                    className={`px-4 py-2 rounded-xl text-xs font-black shadow transition-colors cursor-pointer ${state.settings.virtualJoystickEnabled ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-300'}`}
+                  >
+                    {state.settings.virtualJoystickEnabled ? '✓ Joystick Activo' : 'Activar Joystick'}
+                  </button>
+                  {state.settings.virtualJoystickEnabled && (
+                    <button
+                      onClick={() => onToggleJoystick && onToggleJoystick(false)}
+                      className="px-4 py-2 rounded-xl bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-700 text-xs font-bold cursor-pointer"
+                    >
+                      Apagar
+                    </button>
+                  )}
+                </div>
+                {state.settings.virtualJoystickEnabled && (
+                  <div className="text-[11px] text-cyan-300/80 bg-slate-950/60 rounded-xl p-2 border border-cyan-900/30">
+                    Joystick visible abajo: izquierda = flechas, derecha = ENTER (verde) y B (volver). Fondo transparente.
+                  </div>
+                )}
               </div>
 
               {/* Rescate de Tareas Vencidas */}

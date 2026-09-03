@@ -1196,7 +1196,7 @@ export class PixelArtRenderer {
     ctx.fillStyle = '#fffbeb';
     ctx.fillText(cityTitle, x, y + 1);
 
-    // 8. Bottom Interactive Badge: [A] Entrar (Neat RPG Pill)
+    // 8. Bottom Interactive Badge: [Enter] Entrar (Neat RPG Pill)
     const pillW = 68;
     const pillH = 15;
     const pillX = x - pillW / 2;
@@ -1213,10 +1213,10 @@ export class PixelArtRenderer {
     ctx.lineWidth = 1.2;
     ctx.stroke();
 
-    // Key badge [A]
+    // Key badge [Enter]
     ctx.fillStyle = '#22c55e';
     ctx.font = 'bold 9px system-ui, sans-serif';
-    ctx.fillText('[A]', x - 18, pillY + 11);
+    ctx.fillText('[Enter]', x - 18, pillY + 11);
 
     // "Entrar" label
     ctx.fillStyle = '#fde047';
@@ -1809,7 +1809,8 @@ export class PixelArtRenderer {
     height: number,
     materiaId: string,
     cityNum: number,
-    season: string
+    season: string,
+    maxUnlockedHouse?: number
   ) {
     const materia = MATERIAS.find((m) => m.id === materiaId) || MATERIAS[0];
     const bInfo = BIMESTRES_INFO[cityNum - 1] || BIMESTRES_INFO[0];
@@ -1887,12 +1888,47 @@ export class PixelArtRenderer {
     this.renderTree(ctx, 60, 310, season);
     this.renderTree(ctx, width - 45, 310, season);
 
+    // 4b. Candados visuales para semanas bloqueadas (1:1)
+    const maxH = maxUnlockedHouse ?? 8;
+    const allRowX = [...row1X, ...row2X];
+    for (let i = 0; i < 8; i++) {
+      const weekNum = i + 1;
+      if (weekNum > maxH) {
+        const hx = allRowX[i];
+        const hy = i < 4 ? street1Y - 95 : street2Y - 95;
+        // velo oscuro
+        ctx.fillStyle = 'rgba(15,23,42,0.55)';
+        ctx.fillRect(hx, hy - 6, 78, 64);
+        // candado
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.roundRect(hx + 78 / 2 - 14, hy + 18, 28, 20, 4);
+        ctx.fill();
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        // arco
+        ctx.beginPath();
+        ctx.arc(hx + 78 / 2, hy + 18, 10, Math.PI, 0);
+        ctx.stroke();
+        ctx.fillStyle = '#334155';
+        ctx.beginPath();
+        ctx.arc(hx + 78 / 2, hy + 28, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.font = 'bold 10px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('🔒', hx + 78 / 2, hy + 52);
+        ctx.textAlign = 'start';
+      }
+    }
+
     // Top Header Banner
     this.renderMateriaHeaderPill(
       ctx,
       width / 2,
       32,
-      `${materia.name} • ${bInfo.name} (${bInfo.label} - ${bInfo.months})`,
+      `${materia.name} • ${bInfo.name} (${bInfo.label} - ${bInfo.months}) — Semana ${maxH}/8`,
       materia.color
     );
   }

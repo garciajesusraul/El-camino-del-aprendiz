@@ -43,10 +43,9 @@ export async function syncStateToCloud(state: AppState): Promise<{ ok: boolean; 
       if (profilesPayload.length) await supabase.from('profiles').upsert(profilesPayload as any);
     } catch {}
 
-    // tasks (reemplazo simple: delete + insert para familia)
+    // tasks — sincronización segura sin pérdida: upsert primero, borrar solo lo obsoleto después
     try {
       if (state.tasks.length < 2000) {
-        await supabase.from('tasks').delete().eq('family_code', familyCode);
         const tasksPayload = state.tasks.map(t => ({
           id: t.id,
           family_code: familyCode,
@@ -68,15 +67,47 @@ export async function syncStateToCloud(state: AppState): Promise<{ ok: boolean; 
           days_overdue: (t as any).daysOverdue || null,
           original_points: (t as any).originalPoints || null,
         }));
+
         if (tasksPayload.length) {
-          // chunk to avoid limits
+          // 1) Upsert por bloques: si falla un chunk, NO se borró nada, no hay pérdida
           const chunk = 500;
           for (let i = 0; i < tasksPayload.length; i += chunk) {
-            await supabase.from('tasks').insert(tasksPayload.slice(i, i + chunk) as any);
+            const slice = tasksPayload.slice(i, i + chunk);
+            const { error: upsertErr } = await supabase.from('tasks').upsert(slice as any, { onConflict: 'id' });
+            if (upsertErr) throw upsertErr;
+          }
+          // 2) Solo después de upsert exitoso, borrar tareas que ya no existen localmente (obsoletas)
+          // Para no hacer un DELETE * sin filtro, comparamos IDs
+          const localIds = new Set(state.tasks.map(t => t.id));
+          // Traer IDs de la nube para esta familia (solo columna id, liviano)
+          const { data: cloudRows, error: fetchErr } = await supabase.from('tasks').select('id').eq('family_code', familyCode);
+          if (!fetchErr && cloudRows) {
+            const staleIds = (cloudRows as any[]).map(r => r.id).filter((id: string) => !localIds.has(id));
+            // Borrar en bloques de 200 para no exceder límites de URL
+            for (let i = 0; i < staleIds.length; i += 200) {
+              const batch = staleIds.slice(i, i + 200);
+              const { error: delErr } = await supabase.from('tasks').delete().in('id', batch).eq('family_code', familyCode);
+              if (delErr) throw delErr;
+            }
+          }
+        } else {
+          // Lista local vacía (usuario borró todo): sincronizar borrado a la nube de forma segura
+          // Solo después de snapshot OK, borrar todas las tareas de esa familia en la nube
+          const { data: cloudRows, error: fetchErr } = await supabase.from('tasks').select('id').eq('family_code', familyCode);
+          if (!fetchErr && cloudRows && cloudRows.length > 0) {
+            const allIds = (cloudRows as any[]).map(r => r.id);
+            for (let i = 0; i < allIds.length; i += 200) {
+              const batch = allIds.slice(i, i + 200);
+              const { error: delErr } = await supabase.from('tasks').delete().in('id', batch).eq('family_code', familyCode);
+              if (delErr) throw delErr;
+            }
           }
         }
       }
-    } catch {}
+    } catch (e: any) {
+      // Error granular no bloquea el snapshot (ya guardado arriba), pero lo registramos
+      console.warn('[cloudSync] granular tasks sync falló (snapshot OK, se reintentará):', e?.message || e);
+    }
 
     return { ok: true };
   } catch (e: any) {

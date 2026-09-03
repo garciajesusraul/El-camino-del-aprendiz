@@ -26,8 +26,8 @@ export function createDefaultProfile(
   const defaultUnlockedHouses: Record<string, Record<number, number>> = {};
   
   MATERIAS.forEach((m) => {
-    defaultUnlockedCities[m.id] = 1; // Bimestre 1 unlocked by default
-    defaultUnlockedHouses[m.id] = { 1: 8, 2: 8, 3: 8, 4: 8 };
+    defaultUnlockedCities[m.id] = 1; // Solo Bimestre 1 desbloqueado
+    defaultUnlockedHouses[m.id] = { 1: 1 }; // Solo Semana 1 del Bimestre 1 (progresión 1:1)
   });
 
   return {
@@ -78,6 +78,7 @@ export function getDefaultState(): AppState {
     theme: 'dark',
     habitBoardWidth: 140,
     habitBoardHeight: 72,
+    virtualJoystickEnabled: false,
   };
 
   return {
@@ -130,6 +131,7 @@ export function loadAppState(): AppState {
         theme: 'dark',
         habitBoardWidth: 140,
         habitBoardHeight: 72,
+        virtualJoystickEnabled: false,
       };
     } else {
       if (!parsed.settings.parentPin) parsed.settings.parentPin = '2026';
@@ -141,6 +143,7 @@ export function loadAppState(): AppState {
       if ((parsed.settings as any).theme === undefined) (parsed.settings as any).theme = 'dark';
       if ((parsed.settings as any).habitBoardWidth === undefined) (parsed.settings as any).habitBoardWidth = 140;
       if ((parsed.settings as any).habitBoardHeight === undefined) (parsed.settings as any).habitBoardHeight = 72;
+      if ((parsed.settings as any).virtualJoystickEnabled === undefined) (parsed.settings as any).virtualJoystickEnabled = false;
     }
 
     // Migration for multi-profile support
@@ -167,6 +170,30 @@ export function loadAppState(): AppState {
       return p;
     });
     if ((parsed.profile as any).pomodoroMinutes === undefined) (parsed.profile as any).pomodoroMinutes = (parsed.profiles.find((p: any)=>p.id===parsed.activeUserId) as any)?.pomodoroMinutes ?? 20;
+
+    // Fix progresión: si venía con todo desbloqueado (1:8,2:8,3:8,4:8) reset a 1:1 salvo que ya avanzó manualmente
+    parsed.profiles = parsed.profiles.map((p) => {
+      if (!p.unlockedCities) p.unlockedCities = {};
+      if (!p.unlockedHouses) p.unlockedHouses = {};
+      MATERIAS.forEach((m) => {
+        if (p.unlockedCities[m.id] === undefined) p.unlockedCities[m.id] = 1;
+        const houses = p.unlockedHouses[m.id];
+        const isOldInflated = houses && houses[1] === 8 && houses[2] === 8 && houses[3] === 8 && houses[4] === 8;
+        const hasAdvancedCity = (p.unlockedCities[m.id] || 1) > 1;
+        // Solo resetear si era el default inflado y el padre nunca desbloqueó otra ciudad
+        if (!houses || isOldInflated && !hasAdvancedCity) {
+          p.unlockedHouses[m.id] = { 1: 1 };
+        } else if (houses) {
+          // Normalizar: asegurar al menos {1:1} y topes 1-8
+          if (houses[1] === undefined || houses[1] < 1) houses[1] = 1;
+          Object.keys(houses).forEach(k => {
+            const n = Number(k);
+            houses[n] = Math.max(1, Math.min(8, houses[n]));
+          });
+        }
+      });
+      return p;
+    });
 
     // Sync avatar & real KM for all profiles
     parsed.profiles = parsed.profiles.map((p) => {
@@ -257,6 +284,39 @@ export function loadAppState(): AppState {
     if (!parsed.promises || !Array.isArray(parsed.promises)) parsed.promises = [...DEFAULT_PROMISES];
     // keep promises as string array, trim empties
     parsed.promises = parsed.promises.map((s: string) => s.trim()).filter((s: string) => s.length > 0);
+    // Limpieza punto 7 - OPCION 2: borrar tareas/hábitos según pedido: LEON KEILA/Adam solo hábitos, resto todo
+    try {
+      const famCode = (() => { try { return localStorage.getItem('rpg_family_code'); } catch { return null; } })();
+      const isLeon = famCode && famCode.trim().toUpperCase() === 'LEON';
+      const oldHabitIds = ['habit-tender-cama','habit-lavarse-dientes-cara','habit-banarse-vestirse','habit-lectura-biblia','habit-trabajo-sin-distraerse','habit-guardar-juguetes','habit-guardar-utiles','habit-poner-mesa','habit-ropa-canasto','habit-higiene-nocturna'];
+      if (!isLeon) {
+        // Familias que NO son LEON: borrar TODO (hábitos y tareas) - como pidió para el resto
+        if (parsed.habitDefinitions.length > 0) parsed.habitDefinitions = [];
+        if ((parsed.habitLogs || []).length > 0) parsed.habitLogs = [];
+        if (parsed.tasks.length > 0) parsed.tasks = [];
+      } else {
+        // Familia LEON: mantener hábitos, pero borrar tareas de KEILA y Adam, y tareas semilla del resto
+        const keilaAdamIds = (parsed.profiles || [])
+          .filter((p: any) => {
+            const n = (p.name || '').trim().toLowerCase();
+            return n === 'keila' || n === 'adam';
+          })
+          .map((p: any) => p.id);
+        if (keilaAdamIds.length > 0) {
+          const before = parsed.tasks.length;
+          parsed.tasks = parsed.tasks.filter((t: any) => !keilaAdamIds.includes(t.userId));
+          // También borrar logs de hábitos de KEILA/Adam si tuvieran? No, mantener hábitos = mantener logs
+        }
+        // Además borrar tareas semilla inventadas para todos en LEON
+        const isSeedTask = (t: any) => t.id.startsWith('task-habit-') || /^task-(ciencias|ingles|historia|lenguaje|luces|matematicas|sonidos|kinder_actividades)-b\d+-s\d+-/.test(t.id);
+        const hasSeedTasks = parsed.tasks.some(isSeedTask);
+        if (hasSeedTasks) {
+          parsed.tasks = parsed.tasks.filter((t: any) => !isSeedTask(t));
+        }
+        // No borrar oldHabitIds en LEON (se mantienen)
+      }
+    } catch {}
+
     // Expirar avatares temporales vencidos
     const nowIso = new Date().toISOString();
     parsed.avatarActives = parsed.avatarActives.filter((a) => !a.expiresAt || a.expiresAt > nowIso);
@@ -452,6 +512,12 @@ export function updateTheme(state: AppState, theme: 'dark' | 'light' | 'semi'): 
   return newState;
 }
 
+export function updateVirtualJoystick(state: AppState, enabled: boolean): AppState {
+  const newState: AppState = { ...state, settings: { ...state.settings, virtualJoystickEnabled: enabled } };
+  saveAppState(newState);
+  return newState;
+}
+
 export function updateHabitBoardSize(state: AppState, width: number, height: number): AppState {
   const w = Math.max(80, Math.min(260, Math.round(width)));
   const h = Math.max(40, Math.min(160, Math.round(height)));
@@ -519,6 +585,52 @@ export function updateMusicMode(state: AppState, mode: 'procedural' | 'midi'): A
   return newState;
 }
 
+// Helper: desbloqueo progresivo 1:1 — semana a semana, bimestre a bimestre
+function applyProgressiveUnlocks(
+  profile: ChildProfile,
+  tasks: Task[],
+  affectedKeys: Set<string>,
+  userId: string
+): ChildProfile {
+  // Clone shallow
+  const nextCities = { ...profile.unlockedCities };
+  const nextHouses: Record<string, Record<number, number>> = {};
+  Object.keys(profile.unlockedHouses || {}).forEach(k => {
+    nextHouses[k] = { ...profile.unlockedHouses[k] };
+  });
+
+  for (const key of affectedKeys) {
+    const [materiaId, bStr, sStr] = key.split('|');
+    const b = Number(bStr);
+    const s = Number(sStr);
+    // Todas las tareas de esa semana para ese usuario
+    const weekTasks = tasks.filter(t =>
+      t.materiaId === materiaId && t.bimestre === b && t.semana === s &&
+      (!t.userId || t.userId === userId)
+    );
+    if (weekTasks.length === 0) continue;
+    const allApproved = weekTasks.every(t => t.status === 'approved');
+    if (!allApproved) continue;
+
+    // Semana completada -> desbloquear siguiente semana del mismo bimestre
+    const curMaxHouse = nextHouses[materiaId]?.[b] ?? 1;
+    if (s === curMaxHouse && s < 8) {
+      if (!nextHouses[materiaId]) nextHouses[materiaId] = {};
+      nextHouses[materiaId][b] = s + 1;
+    } else if (s === 8 && curMaxHouse >= 8) {
+      // Última semana del bimestre completada -> desbloquear siguiente bimestre
+      const curMaxCity = nextCities[materiaId] ?? 1;
+      if (b === curMaxCity && b < 4) {
+        nextCities[materiaId] = b + 1;
+        if (!nextHouses[materiaId]) nextHouses[materiaId] = {};
+        if (!nextHouses[materiaId][b + 1]) nextHouses[materiaId][b + 1] = 1;
+      }
+    }
+  }
+
+  return { ...profile, unlockedCities: nextCities, unlockedHouses: nextHouses };
+}
+
 // Helper methods for business logic
 export function submitTaskCompletion(state: AppState, taskId: string): AppState {
   const updatedTasks: Task[] = state.tasks.map((t) => {
@@ -540,6 +652,10 @@ export function submitTaskCompletion(state: AppState, taskId: string): AppState 
 
   if (state.settings.autoApproveInChildMode && task) {
     updatedProfile = applyTaskRewards(updatedProfile, task);
+    // Progresión automática si la semana queda completa
+    const affected = new Set<string>([`${task.materiaId}|${task.bimestre}|${task.semana}`]);
+    // Necesitamos evaluar con updatedTasks
+    updatedProfile = applyProgressiveUnlocks(updatedProfile, updatedTasks, affected, state.activeUserId);
   }
 
   const newState: AppState = {
@@ -553,9 +669,11 @@ export function submitTaskCompletion(state: AppState, taskId: string): AppState 
 
 export function approveTasks(state: AppState, taskIds: string[]): AppState {
   let updatedProfile = { ...state.profile };
+  const affectedKeys = new Set<string>();
   const updatedTasks = state.tasks.map((t) => {
     if (taskIds.includes(t.id) && t.status !== 'approved') {
       updatedProfile = applyTaskRewards(updatedProfile, t);
+      affectedKeys.add(`${t.materiaId}|${t.bimestre}|${t.semana}`);
       return {
         ...t,
         status: 'approved' as const,
@@ -564,6 +682,11 @@ export function approveTasks(state: AppState, taskIds: string[]): AppState {
     }
     return t;
   });
+
+  // Desbloqueo progresivo: si una semana queda 100% aprobada, abrir la siguiente
+  if (affectedKeys.size > 0) {
+    updatedProfile = applyProgressiveUnlocks(updatedProfile, updatedTasks, affectedKeys, state.activeUserId);
+  }
 
   const newState: AppState = {
     ...state,
@@ -628,9 +751,20 @@ export function applyTaskRewards(profile: ChildProfile, task: Task): ChildProfil
 }
 
 export function executeWeekPass(state: AppState): AppState {
-  // Move pending tasks in current week to expired with degraded points
+  // FIX punto 6: solo afecta la semana actual visible, no todas
+  // Mantiene comportamiento de expirar con penalización pero filtrado
+  const targetMateria = state.currentMateria;
+  const targetBimestre = state.currentCity;
+  const targetSemana = state.currentHouse;
+  const uid = state.activeUserId;
   const updatedTasks = state.tasks.map((t) => {
-    if (t.status === 'pending') {
+    if (
+      t.status === 'pending' &&
+      (!t.userId || t.userId === uid) &&
+      t.materiaId === targetMateria &&
+      t.bimestre === targetBimestre &&
+      t.semana === targetSemana
+    ) {
       const daysOver = (t.daysOverdue || 0) + 7;
       const penaltyPercent = Math.min(60, daysOver * (state.settings.degradationRatePerDay / 7));
       const original = t.originalPoints || t.points;
@@ -647,6 +781,238 @@ export function executeWeekPass(state: AppState): AppState {
   });
 
   const newState = { ...state, tasks: updatedTasks };
+  saveAppState(newState);
+  return newState;
+}
+
+function reverseTaskRewards(profile: ChildProfile, task: Task): ChildProfile {
+  // Inverso de applyTaskRewards - quita los puntos otorgados
+  let wisdomGain = 0;
+  let lifeGain = 0;
+  let coinGain = Math.max(2, Math.floor((task.originalPoints || task.points) / 2));
+  let kmGain = 1;
+  if (task.type === 'sabiduria') {
+    wisdomGain = task.originalPoints || task.points;
+  } else {
+    lifeGain = task.originalPoints || task.points;
+    kmGain = 0.5;
+  }
+  const newWisdom = Math.max(0, profile.wisdomPoints - wisdomGain);
+  const newLife = Math.max(0, profile.lifePoints - lifeGain);
+  const newCoins = Math.max(0, profile.coins - coinGain);
+  const newKm = Math.max(0, Number((profile.kmGanados - kmGain).toFixed(1)));
+  const totalXp = newWisdom + newLife;
+  const newLevel = Math.max(1, Math.floor(totalXp / 50) + 1);
+  return { ...profile, wisdomPoints: newWisdom, lifePoints: newLife, coins: newCoins, kmGanados: newKm, level: newLevel };
+}
+
+function recomputeProgressiveUnlocks(profile: ChildProfile, tasks: Task[], userId: string): ChildProfile {
+  const nextCities: Record<string, number> = {};
+  const nextHouses: Record<string, Record<number, number>> = {};
+  // Inicializa desbloqueado mínimo 1:1 para todas las materias
+  MATERIAS.forEach((m) => {
+    nextCities[m.id] = 1;
+    nextHouses[m.id] = { 1: 1 };
+  });
+  // Recorre en orden bimestre/semana y desbloquea si semana completa aprobada
+  for (let b = 1; b <= 4; b++) {
+    for (let s = 1; s <= 8; s++) {
+      for (const m of MATERIAS) {
+        const weekTasks = tasks.filter(
+          (t) => t.materiaId === m.id && t.bimestre === b && t.semana === s && (!t.userId || t.userId === userId)
+        );
+        if (weekTasks.length === 0) continue;
+        const allApproved = weekTasks.every((t) => t.status === 'approved');
+        if (!allApproved) continue;
+        const curMaxHouse = nextHouses[m.id]?.[b] ?? 1;
+        if (s === curMaxHouse && s < 8) {
+          if (!nextHouses[m.id]) nextHouses[m.id] = {};
+          nextHouses[m.id][b] = s + 1;
+        } else if (s === 8 && curMaxHouse >= 8) {
+          const curMaxCity = nextCities[m.id] ?? 1;
+          if (b === curMaxCity && b < 4) {
+            nextCities[m.id] = b + 1;
+            if (!nextHouses[m.id]) nextHouses[m.id] = {};
+            if (!nextHouses[m.id][b + 1]) nextHouses[m.id][b + 1] = 1;
+          }
+        }
+      }
+    }
+  }
+  // Respeta desbloqueos manuales mayores que el recálculo (no bajar si padre desbloqueó manualmente más)
+  Object.keys(profile.unlockedCities || {}).forEach((mid) => {
+    const cur = profile.unlockedCities[mid] || 1;
+    if (cur > (nextCities[mid] || 1)) nextCities[mid] = cur;
+  });
+  Object.keys(profile.unlockedHouses || {}).forEach((mid) => {
+    const houses = profile.unlockedHouses[mid] || {};
+    Object.keys(houses).forEach((k) => {
+      const b = Number(k);
+      const cur = houses[b] || 1;
+      if (!nextHouses[mid]) nextHouses[mid] = {};
+      if (cur > (nextHouses[mid][b] || 1)) nextHouses[mid][b] = cur;
+    });
+  });
+  return { ...profile, unlockedCities: nextCities, unlockedHouses: nextHouses };
+}
+
+export function approveWeek(state: AppState, materiaId: string, bimestre: number, semana: number): AppState {
+  const uid = state.activeUserId;
+  let updatedProfile = { ...state.profile };
+  const affectedKeys = new Set<string>();
+  const updatedTasks = state.tasks.map((t) => {
+    if (
+      t.materiaId === materiaId &&
+      t.bimestre === bimestre &&
+      t.semana === semana &&
+      (!t.userId || t.userId === uid) &&
+      t.status !== 'approved'
+    ) {
+      updatedProfile = applyTaskRewards(updatedProfile, { ...t, points: t.originalPoints || t.points } as Task);
+      affectedKeys.add(`${materiaId}|${bimestre}|${semana}`);
+      return { ...t, status: 'approved' as const, approvedAt: new Date().toISOString(), daysOverdue: 0, points: t.originalPoints || t.points };
+    }
+    return t;
+  });
+  if (affectedKeys.size > 0) {
+    updatedProfile = applyProgressiveUnlocks(updatedProfile, updatedTasks, affectedKeys, uid);
+  }
+  const newState: AppState = { ...state, tasks: updatedTasks, profile: updatedProfile };
+  saveAppState(newState);
+  return newState;
+}
+
+export function approveBimestre(state: AppState, materiaId: string, bimestre: number): AppState {
+  const uid = state.activeUserId;
+  let updatedProfile = { ...state.profile };
+  const affectedKeys = new Set<string>();
+  const updatedTasks = state.tasks.map((t) => {
+    if (
+      t.materiaId === materiaId &&
+      t.bimestre === bimestre &&
+      (!t.userId || t.userId === uid) &&
+      t.status !== 'approved'
+    ) {
+      updatedProfile = applyTaskRewards(updatedProfile, { ...t, points: t.originalPoints || t.points } as Task);
+      affectedKeys.add(`${t.materiaId}|${t.bimestre}|${t.semana}`);
+      return { ...t, status: 'approved' as const, approvedAt: new Date().toISOString(), daysOverdue: 0, points: t.originalPoints || t.points };
+    }
+    return t;
+  });
+  if (affectedKeys.size > 0) {
+    updatedProfile = applyProgressiveUnlocks(updatedProfile, updatedTasks, affectedKeys, uid);
+  }
+  const newState: AppState = { ...state, tasks: updatedTasks, profile: updatedProfile };
+  saveAppState(newState);
+  return newState;
+}
+
+export function unapproveWeek(state: AppState, materiaId: string, bimestre: number, semana: number): AppState {
+  const uid = state.activeUserId;
+  let updatedProfile = { ...state.profile };
+  const updatedTasks = state.tasks.map((t) => {
+    if (
+      t.materiaId === materiaId &&
+      t.bimestre === bimestre &&
+      t.semana === semana &&
+      (!t.userId || t.userId === uid) &&
+      t.status === 'approved'
+    ) {
+      updatedProfile = reverseTaskRewards(updatedProfile, t);
+      return { ...t, status: 'pending' as const, submittedAt: undefined, approvedAt: undefined, daysOverdue: 0 };
+    }
+    return t;
+  });
+  // Recalcula desbloqueos para quitar avance si corresponde
+  updatedProfile = recomputeProgressiveUnlocks(updatedProfile, updatedTasks, uid);
+  const newState: AppState = { ...state, tasks: updatedTasks, profile: updatedProfile };
+  saveAppState(newState);
+  return newState;
+}
+
+export function unapproveBimestre(state: AppState, materiaId: string, bimestre: number): AppState {
+  const uid = state.activeUserId;
+  let updatedProfile = { ...state.profile };
+  const updatedTasks = state.tasks.map((t) => {
+    if (
+      t.materiaId === materiaId &&
+      t.bimestre === bimestre &&
+      (!t.userId || t.userId === uid) &&
+      t.status === 'approved'
+    ) {
+      updatedProfile = reverseTaskRewards(updatedProfile, t);
+      return { ...t, status: 'pending' as const, submittedAt: undefined, approvedAt: undefined, daysOverdue: 0 };
+    }
+    return t;
+  });
+  updatedProfile = recomputeProgressiveUnlocks(updatedProfile, updatedTasks, uid);
+  const newState: AppState = { ...state, tasks: updatedTasks, profile: updatedProfile };
+  saveAppState(newState);
+  return newState;
+}
+
+export function configureGameStart(
+  state: AppState,
+  startBimestre: number,
+  startSemana: number,
+  grantPoints: boolean
+): AppState {
+  const uid = state.activeUserId;
+  const sb = Math.max(1, Math.min(4, startBimestre));
+  const ss = Math.max(1, Math.min(8, startSemana));
+  let updatedProfile = { ...state.profile };
+  const affectedKeys = new Set<string>();
+
+  const isBefore = (b: number, s: number) => b < sb || (b === sb && s < ss);
+
+  const updatedTasks = state.tasks.map((t) => {
+    if (
+      (!t.userId || t.userId === uid) &&
+      isBefore(t.bimestre, t.semana) &&
+      t.status !== 'approved'
+    ) {
+      if (grantPoints) {
+        updatedProfile = applyTaskRewards(updatedProfile, { ...t, points: t.originalPoints || t.points } as Task);
+      }
+      affectedKeys.add(`${t.materiaId}|${t.bimestre}|${t.semana}`);
+      return {
+        ...t,
+        status: 'approved' as const,
+        approvedAt: new Date().toISOString(),
+        daysOverdue: 0,
+        points: t.originalPoints || t.points,
+      };
+    }
+    return t;
+  });
+
+  // Asegura desbloqueo al menos hasta el punto de inicio
+  const nextCities = { ...updatedProfile.unlockedCities };
+  const nextHouses: Record<string, Record<number, number>> = {};
+  Object.keys(updatedProfile.unlockedHouses || {}).forEach((k) => {
+    nextHouses[k] = { ...updatedProfile.unlockedHouses[k] };
+  });
+  MATERIAS.forEach((m) => {
+    if (!nextCities[m.id] || nextCities[m.id] < sb) nextCities[m.id] = sb;
+    if (!nextHouses[m.id]) nextHouses[m.id] = {};
+    for (let b = 1; b < sb; b++) {
+      if (!nextHouses[m.id][b] || nextHouses[m.id][b] < 8) nextHouses[m.id][b] = 8;
+    }
+    if (!nextHouses[m.id][sb] || nextHouses[m.id][sb] < ss) nextHouses[m.id][sb] = ss;
+  });
+  updatedProfile = { ...updatedProfile, unlockedCities: nextCities, unlockedHouses: nextHouses };
+
+  if (affectedKeys.size > 0 && grantPoints) {
+    updatedProfile = applyProgressiveUnlocks(updatedProfile, updatedTasks, affectedKeys, uid);
+    // Luego asegura mínimo de inicio por si no había tareas
+    MATERIAS.forEach((m) => {
+      if (updatedProfile.unlockedCities[m.id] < sb) updatedProfile.unlockedCities[m.id] = sb;
+      if (!updatedProfile.unlockedHouses[m.id]) updatedProfile.unlockedHouses[m.id] = {};
+      if ((updatedProfile.unlockedHouses[m.id][sb] || 1) < ss) updatedProfile.unlockedHouses[m.id][sb] = ss;
+    });
+  }
+
+  const newState: AppState = { ...state, tasks: updatedTasks, profile: updatedProfile };
   saveAppState(newState);
   return newState;
 }

@@ -145,6 +145,7 @@ export interface GameSettings {
   theme: AppTheme;
   habitBoardWidth: number;
   habitBoardHeight: number;
+  virtualJoystickEnabled: boolean;
 }
 
 export type MedalCriteriaType = 'daily_activities' | 'week_complete' | 'week_complete_ontime' | 'bimestre_complete' | 'manual';

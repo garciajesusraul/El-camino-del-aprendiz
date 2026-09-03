@@ -210,7 +210,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           avatarEmoji: '⛲',
           avatarBg: 'bg-sky-700',
           text: 'Las aguas cristalinas reflejan los 7 caminos del conocimiento. ¡Elegí un portal para viajar!',
-          primaryActionLabel: 'Continuar Explorando [A]',
+          primaryActionLabel: 'Continuar Explorando [Enter]',
           onPrimaryAction: () => setActiveDialogue(null),
         });
       }
@@ -234,7 +234,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               avatarEmoji: '🔒',
               avatarBg: 'bg-slate-700',
               text: `Esta ciudad es del ${bInfo.label} (${bInfo.months}). Completá la ciudad anterior para avanzar.`,
-              primaryActionLabel: 'Entendido [A]',
+              primaryActionLabel: 'Entendido [Enter]',
               onPrimaryAction: () => setActiveDialogue(null),
             });
           }
@@ -245,13 +245,28 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       const street1Y = 190;
       const street2Y = 410;
       const row1X = [135, 285, 435, 585];
+      const maxHouse = (state.currentMateria && state.profile.unlockedHouses[state.currentMateria]?.[state.currentCity]) || 1;
       for (let i = 0; i < 4; i++) {
         const hx = row1X[i];
+        const houseNum = i + 1;
         const houseRect = { x: hx, y: street1Y - 95, w: 78, h: 58 };
         if (cx >= houseRect.x - 6 && cx <= houseRect.x + houseRect.w + 6 && cy >= houseRect.y - 10 && cy <= houseRect.y + houseRect.h + 10) {
+          if (houseNum > maxHouse) {
+            sound.playStep();
+            setActiveDialogue({
+              speakerName: `Semana ${houseNum} bloqueada`,
+              speakerRole: `Bimestre ${state.currentCity}`,
+              avatarEmoji: '🔒',
+              avatarBg: 'bg-slate-700',
+              text: `Completá la Semana ${maxHouse} para desbloquear la Semana ${houseNum}. La progresión es 1 a 1.`,
+              primaryActionLabel: 'Entendido [Enter]',
+              onPrimaryAction: () => setActiveDialogue(null),
+            });
+            return;
+          }
           sound.playSelect();
-          onOpenNotebook(state.currentMateria || 'matematicas', state.currentCity, i + 1);
-          lastWalkTriggerRef.current = `city:house:${i + 1}`;
+          onOpenNotebook(state.currentMateria || 'matematicas', state.currentCity, houseNum);
+          lastWalkTriggerRef.current = `city:house:${houseNum}`;
           walkSuppressUntilRef.current = Date.now() + 1800;
           walkEnterFramesRef.current = null;
           return;
@@ -259,11 +274,25 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       }
       for (let i = 0; i < 4; i++) {
         const hx = row1X[i];
+        const houseNum = i + 5;
         const houseRect = { x: hx, y: street2Y - 95, w: 78, h: 58 };
         if (cx >= houseRect.x - 6 && cx <= houseRect.x + houseRect.w + 6 && cy >= houseRect.y - 10 && cy <= houseRect.y + houseRect.h + 10) {
+          if (houseNum > maxHouse) {
+            sound.playStep();
+            setActiveDialogue({
+              speakerName: `Semana ${houseNum} bloqueada`,
+              speakerRole: `Bimestre ${state.currentCity}`,
+              avatarEmoji: '🔒',
+              avatarBg: 'bg-slate-700',
+              text: `Completá la Semana ${maxHouse} para desbloquear la Semana ${houseNum}.`,
+              primaryActionLabel: 'Entendido [Enter]',
+              onPrimaryAction: () => setActiveDialogue(null),
+            });
+            return;
+          }
           sound.playSelect();
-          onOpenNotebook(state.currentMateria || 'matematicas', state.currentCity, i + 5);
-          lastWalkTriggerRef.current = `city:house:${i + 5}`;
+          onOpenNotebook(state.currentMateria || 'matematicas', state.currentCity, houseNum);
+          lastWalkTriggerRef.current = `city:house:${houseNum}`;
           walkSuppressUntilRef.current = Date.now() + 1800;
           walkEnterFramesRef.current = null;
           return;
@@ -403,7 +432,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           avatarEmoji: '🧔',
           avatarBg: 'bg-amber-800',
           text: `¡Hola, ${state.profile.name}! Hoy es un gran día para aprender y explorar. Tus tareas y recompensas las gestionamos juntos desde el Menú de Opciones con PIN. ¡Podés salir a la Plaza a explorar los Reinos del Saber!`,
-          primaryActionLabel: 'Salir a la Plaza [A]',
+          primaryActionLabel: 'Salir a la Plaza [Enter]',
           onPrimaryAction: () => {
             setActiveDialogue(null);
             sound.playDoor();
@@ -429,7 +458,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           avatarEmoji: '⛲',
           avatarBg: 'bg-sky-700',
           text: 'Las aguas cristalinas reflejan los 7 caminos del conocimiento: Matemáticas, Lenguaje, Ciencias, Historia, Arte, Música e Inglés. ¡Elegí un portal para viajar a las Ciudades del Saber!',
-          primaryActionLabel: 'Continuar Explorando [A]',
+          primaryActionLabel: 'Continuar Explorando [Enter]',
           onPrimaryAction: () => setActiveDialogue(null),
         });
         return;
@@ -444,7 +473,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           avatarEmoji: '🛒',
           avatarBg: 'bg-amber-600',
           text: '¡Saludos, joven aventurero! Por cada misión que cumplas y tus papás aprueben en el Modo Adulto, recibirás monedas de oro y sabiduría para desbloquear accesorios y premios.',
-          primaryActionLabel: '¡Genial! [A]',
+          primaryActionLabel: '¡Genial! [Enter]',
           onPrimaryAction: () => setActiveDialogue(null),
         });
         return;
@@ -495,7 +524,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               avatarEmoji: '🔒',
               avatarBg: 'bg-slate-700',
               text: `Esta ciudad corresponde al Bimestre ${idx + 1} (${bInfo.months}). Necesitás completar las misiones de la ciudad anterior para avanzar por el camino.`,
-              primaryActionLabel: 'Entendido [A]',
+              primaryActionLabel: 'Entendido [Enter]',
               onPrimaryAction: () => setActiveDialogue(null),
             });
           }
@@ -509,20 +538,35 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         onSceneChange('MATERIA_MAP');
         return;
       }
-      // Enter House / Week
+      // Enter House / Week (con bloqueo 1:1)
+      const maxHouse = (state.currentMateria && state.profile.unlockedHouses[state.currentMateria]?.[state.currentCity]) || 1;
       const row1X = [135, 285, 435, 585];
       // Check Row 1 (Weeks 1 to 4)
       for (let i = 0; i < 4; i++) {
         const hx = row1X[i];
+        const houseNum = i + 1;
         if (Math.abs(p.x - (hx + 38)) < 45 && Math.abs(p.y - 170) < 55) {
+          if (houseNum > maxHouse) {
+            sound.playStep();
+            setActiveDialogue({
+              speakerName: `Semana ${houseNum} bloqueada`,
+              speakerRole: `Bimestre ${state.currentCity}`,
+              avatarEmoji: '🔒',
+              avatarBg: 'bg-slate-700',
+              text: `Semana ${houseNum} está bloqueada. Completá la Semana ${maxHouse} primero.`,
+              primaryActionLabel: 'Entendido [Enter]',
+              onPrimaryAction: () => setActiveDialogue(null),
+            });
+            return;
+          }
           sound.playSelect();
           setActiveDialogue({
-            speakerName: `Estación de la Semana ${i + 1}`,
+            speakerName: `Estación de la Semana ${houseNum}`,
             speakerRole: `Bimestre ${state.currentCity}`,
             avatarEmoji: '🏡',
             avatarBg: 'bg-indigo-700',
-            text: `¡Bienvenido a la Semana ${i + 1}! Tus actividades y tareas pedagógicas se administran desde el Modo Opciones.`,
-            primaryActionLabel: 'Continuar Explorando [A]',
+            text: `¡Bienvenido a la Semana ${houseNum}! Tus actividades se administran desde el Modo Opciones.`,
+            primaryActionLabel: 'Continuar Explorando [Enter]',
             onPrimaryAction: () => setActiveDialogue(null),
           });
           return;
@@ -531,15 +575,29 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // Check Row 2 (Weeks 5 to 8)
       for (let i = 0; i < 4; i++) {
         const hx = row1X[i];
+        const houseNum = i + 5;
         if (Math.abs(p.x - (hx + 38)) < 45 && Math.abs(p.y - 390) < 55) {
+          if (houseNum > maxHouse) {
+            sound.playStep();
+            setActiveDialogue({
+              speakerName: `Semana ${houseNum} bloqueada`,
+              speakerRole: `Bimestre ${state.currentCity}`,
+              avatarEmoji: '🔒',
+              avatarBg: 'bg-slate-700',
+              text: `Semana ${houseNum} está bloqueada. Completá la Semana ${maxHouse} primero.`,
+              primaryActionLabel: 'Entendido [Enter]',
+              onPrimaryAction: () => setActiveDialogue(null),
+            });
+            return;
+          }
           sound.playSelect();
           setActiveDialogue({
-            speakerName: `Estación de la Semana ${i + 5}`,
+            speakerName: `Estación de la Semana ${houseNum}`,
             speakerRole: `Bimestre ${state.currentCity}`,
             avatarEmoji: '🏡',
             avatarBg: 'bg-indigo-700',
-            text: `¡Bienvenido a la Semana ${i + 5}! Tus actividades y tareas pedagógicas se administran desde el Modo Opciones.`,
-            primaryActionLabel: 'Continuar Explorando [A]',
+            text: `¡Bienvenido a la Semana ${houseNum}! Tus actividades se administran desde el Modo Opciones.`,
+            primaryActionLabel: 'Continuar Explorando [Enter]',
             onPrimaryAction: () => setActiveDialogue(null),
           });
           return;
@@ -548,7 +606,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     }
   }, [activeDialogue, state, onSceneChange, onOpenHabitsBoard]);
 
-  // Keyboard Event Listeners for Arrow Keys + [A], [B], [C], [P], [F]
+  // Keyboard Event Listeners for Arrow Keys + [Enter], [B], [C], [P], [F]
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Prevent scrolling on arrows & space
@@ -559,8 +617,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       keysRef.current[e.code] = true;
       keysRef.current[e.key.toLowerCase()] = true;
 
-      // [Tecla A], Espacio o Enter -> Acción Principal
-      if (e.code === 'KeyA' || e.code === 'Space' || e.code === 'Enter') {
+      // Espacio o Enter -> Acción Principal (ya no usa A para no confundir con movimiento)
+      if (e.code === 'Space' || e.code === 'Enter' || e.code === 'NumpadEnter') {
         checkActionTrigger();
       }
 
@@ -637,19 +695,16 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         // Pausado: no mueve, no cuenta como activo
         isMoving = false;
       } else if (!activeDialogue) {
-        // Movement: Arrows or WASD (Arrow keys take priority) - escalado por dt
-        if (keys['ArrowUp'] || keys['w'] || keys['KeyW']) {
+        // Movement: solo Flechas (ya no WASD para evitar conflicto con tecla A)
+        if (keys['ArrowUp']) {
           dy -= playerRef.current.speed * dt;
           newFacing = 'up';
           isMoving = true;
         }
-        if (keys['ArrowDown'] || keys['s'] || keys['KeyS']) {
+        if (keys['ArrowDown']) {
           dy += playerRef.current.speed * dt;
           newFacing = 'down';
           isMoving = true;
-        }
-        if (keys['ArrowLeft'] || keys['a_move'] || keys['KeyA_off']) {
-          // Handled via Left Arrow
         }
         if (keys['ArrowLeft']) {
           dx -= playerRef.current.speed * dt;
@@ -713,39 +768,39 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       } else if (!activeDialogue) {
         if (state.currentScene === 'HOUSE') {
           if (nextY > 430 && nextX > 300 && nextX < 500) {
-            promptText = '🚪 Presioná [A] para salir al día';
+            promptText = '🚪 Presioná [Enter] para salir al día';
           } else {
             const nearComputer = nextX >= 55 && nextX <= 165 && nextY >= 145 && nextY <= 265;
             if (nearComputer) {
               promptText = '💻 Presioná [H] para abrir Hábitos (computadora)';
             } else {
-              promptText = '💬 Presioná [A] para hablar con Papá o [M] para Misiones';
+              promptText = '💬 Presioná [Enter] para hablar con Papá o [M] para Misiones';
             }
           }
         } else if (state.currentScene === 'PLAZA') {
           if (nextY < 120 && Math.abs(nextX - 400) < 70) {
-            promptText = '🏠 Presioná [A] para entrar a tu Casa';
+            promptText = '🏠 Presioná [Enter] para entrar a tu Casa';
           } else if (Math.hypot(nextX - 400, nextY - 310) < 75) {
-            promptText = '⛲ Presioná [A] para examinar la Fuente';
+            promptText = '⛲ Presioná [Enter] para examinar la Fuente';
           } else if (Math.abs(nextX - 620) < 55 && Math.abs(nextY - 145) < 50) {
-            promptText = '🛒 Presioná [A] para hablar con el Mercader';
+            promptText = '🛒 Presioná [Enter] para hablar con el Mercader';
           } else if (state.profile?.gradeLevel === 'kinder') {
             const dist = Math.hypot(nextX - 400, nextY - 490);
             if (dist < 28) {
-              promptText = '🎈 Parate sobre el cartel para entrar a Kinder • [A] o click';
+              promptText = '🎈 Parate sobre el cartel para entrar a Kinder • [Enter] o click';
             }
           } else {
             for (const mat of MATERIAS) {
               const dist = Math.hypot(nextX - mat.portalX, nextY - mat.portalY);
               if (dist < 28) {
-                promptText = `▶ Parate sobre el cartel de ${mat.shortName} • [A] o click`;
+                promptText = `▶ Parate sobre el cartel de ${mat.shortName} • [Enter] o click`;
                 break;
               }
             }
           }
         } else if (state.currentScene === 'MATERIA_MAP') {
           if (nextX < 80) {
-            promptText = '◀ Presioná [B] o [A] para volver a la Plaza';
+            promptText = '◀ Presioná [B] o [Enter] para volver a la Plaza';
           } else {
             const citiesX = [180, 370, 560, 720];
             const maxUnlocked = (state.currentMateria && state.profile.unlockedCities[state.currentMateria]) || 1;
@@ -754,8 +809,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
                 const bInfo = BIMESTRES_INFO[idx];
                 promptText =
                   idx + 1 <= maxUnlocked
-                    ? `🏛️ Presioná [A] para entrar a ${bInfo.name}`
-                    : `🔒 ${bInfo.name} bloqueada [A]`;
+                    ? `🏛️ Presioná [Enter] para entrar a ${bInfo.name}`
+                    : `🔒 ${bInfo.name} bloqueada [Enter]`;
               }
             });
           }
@@ -763,12 +818,17 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           if (nextX < 80) {
             promptText = '◀ Presioná [B] para volver al mapa';
           } else {
-            // Detect nearest house for better prompt
+            // Detect nearest house for better prompt (con bloqueo)
+            const maxH = (state.currentMateria && (state.profile.unlockedHouses[state.currentMateria]?.[state.currentCity] ?? 1)) || 1;
             const row1X = [135, 285, 435, 585];
             let nearWeek: number | null = null;
             for (let i = 0; i < 4; i++) if (Math.abs(nextX - (row1X[i] + 39)) < 42 && Math.abs(nextY - 150) < 50) nearWeek = i + 1;
             for (let i = 0; i < 4; i++) if (Math.abs(nextX - (row1X[i] + 39)) < 42 && Math.abs(nextY - 370) < 50) nearWeek = i + 5;
-            promptText = nearWeek ? `🏡 Semana ${nearWeek}: caminá a la puerta o clickeá / [A] para abrir` : '🏡 Caminá a una casa o clickeá para abrir la Libreta [M]';
+            if (nearWeek !== null && nearWeek > maxH) {
+              promptText = `🔒 Semana ${nearWeek} bloqueada — completá Semana ${maxH} primero`;
+            } else {
+              promptText = nearWeek ? `🏡 Semana ${nearWeek}: caminá a la puerta o clickeá / [Enter] para abrir` : '🏡 Caminá a una casa o clickeá para abrir la Libreta [M]';
+            }
           }
         }
       }
@@ -779,7 +839,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         if (state.currentScene === 'HOUSE' && nextY > 430 && nextX > 310 && nextX < 490) {
           walkKey = 'house:exit';
           walkAction = () => { if (canEnter()) { sound.playDoor(); onSceneChange('PLAZA'); } };
-          promptText = '🚪 Caminá hacia la puerta o clickeá para salir • [A]';
+          promptText = '🚪 Caminá hacia la puerta o clickeá para salir • [Enter]';
         } else if (state.currentScene === 'PLAZA') {
           if (nextY < 120 && Math.abs(nextX - 400) < 70) {
             walkKey = 'plaza:house';
@@ -794,7 +854,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               if (Math.hypot(nextX - mat.portalX, nextY - mat.portalY) < 22) {
                 walkKey = `plaza:mat:${mat.id}`;
                 walkAction = () => { if (canEnter()) { sound.playSelect(); onSceneChange('MATERIA_MAP', { materia: mat.id }); } };
-                promptText = `▶ Parate sobre el cartel de ${mat.shortName} • [A] o click`;
+                promptText = `▶ Parate sobre el cartel de ${mat.shortName} • [Enter] o click`;
                 break;
               }
             }
@@ -813,26 +873,32 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
                 const cn = cityNum;
                 walkAction = () => { if (canEnter()) { sound.playSelect(); onSceneChange('CITY_MAP', { city: cn }); } };
                 const bInfo = BIMESTRES_INFO[idx];
-                promptText = `🏛️ Parate sobre la puerta para entrar a ${bInfo.name} • [A] o click`;
+                promptText = `🏛️ Parate sobre la puerta para entrar a ${bInfo.name} • [Enter] o click`;
               }
               break;
             }
           }
         } else if (state.currentScene === 'CITY_MAP') {
+          const maxHouseWalk = (state.currentMateria && (state.profile.unlockedHouses[state.currentMateria]?.[state.currentCity] ?? 1)) || 1;
           const row1X = [135, 285, 435, 585];
           for (let i = 0; i < 4; i++) {
             const hx = row1X[i];
             const doorX = hx + 39;
             const doorY = 142; // street1Y(190)-48 centro puerta
+            const w = i + 1;
             if (Math.abs(nextX - doorX) < 14 && Math.abs(nextY - doorY) < 14) {
-              walkKey = `city:house:${i + 1}`;
-              const w = i + 1;
+              if (w > maxHouseWalk) {
+                walkKey = null;
+                promptText = `🔒 Semana ${w} bloqueada`;
+                break;
+              }
+              walkKey = `city:house:${w}`;
               walkAction = () => {
                 sound.playSelect();
                 onOpenNotebook(state.currentMateria || 'matematicas', state.currentCity, w);
                 setPlayer((prev) => ({ ...prev, y: prev.y + 18 }));
               };
-              promptText = `🏡 Semana ${w}: parate sobre la puerta • [A] o click`;
+              promptText = `🏡 Semana ${w}: parate sobre la puerta • [Enter] o click`;
               break;
             }
           }
@@ -841,15 +907,20 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               const hx = row1X[i];
               const doorX = hx + 39;
               const doorY = 362; // street2Y(410)-48
+              const w = i + 5;
               if (Math.abs(nextX - doorX) < 14 && Math.abs(nextY - doorY) < 14) {
-                walkKey = `city:house:${i + 5}`;
-                const w = i + 5;
+                if (w > maxHouseWalk) {
+                  walkKey = null;
+                  promptText = `🔒 Semana ${w} bloqueada`;
+                  break;
+                }
+                walkKey = `city:house:${w}`;
                 walkAction = () => {
                   sound.playSelect();
                   onOpenNotebook(state.currentMateria || 'matematicas', state.currentCity, w);
                   setPlayer((prev) => ({ ...prev, y: prev.y + 18 }));
                 };
-                promptText = `🏡 Semana ${w}: parate sobre la puerta • [A] o click`;
+                promptText = `🏡 Semana ${w}: parate sobre la puerta • [Enter] o click`;
                 break;
               }
             }
@@ -872,9 +943,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             promptText = '↔️ Aleja al personaje de la puerta para volver a entrar';
           }
         } else if (walkKey && walkAction) {
-          // C) Auto-entrada caminando desactivada: solo [A]/click entra (evita traba cada 3 pasos en PC lenta)
+          // C) Auto-entrada caminando desactivada: solo [Enter]/click entra (evita traba cada 3 pasos en PC lenta)
           walkEnterFramesRef.current = null;
-          // No auto-trigger, solo deja promptText para [A]
+          // No auto-trigger, solo deja promptText para [Enter]
         } else {
           walkEnterFramesRef.current = null;
         }
@@ -917,13 +988,15 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           season
         );
       } else if (state.currentScene === 'CITY_MAP') {
+        const maxHouse = (state.currentMateria && state.profile.unlockedHouses[state.currentMateria]?.[state.currentCity]) || 1;
         pixelArtRenderer.renderCityMapScene(
           ctx,
           canvas.width,
           canvas.height,
           state.currentMateria || 'matematicas',
           state.currentCity,
-          season
+          season,
+          maxHouse
         );
       }
 
@@ -1246,13 +1319,13 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               <div className="flex items-center justify-between text-slate-300 py-0.5">
                 <span className="text-slate-400">Mover personaje:</span>
                 <span className="font-mono text-amber-300 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
-                  Flechas / WASD
+                  Flechas
                 </span>
               </div>
               <div className="flex items-center justify-between text-slate-300 py-0.5">
                 <span className="text-slate-400">Interactuar / Entrar:</span>
                 <span className="font-mono text-emerald-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800 font-bold">
-                  [A] / Espacio / Enter
+                  Enter / Espacio
                 </span>
               </div>
               <div className="flex items-center justify-between text-slate-300 py-0.5">
